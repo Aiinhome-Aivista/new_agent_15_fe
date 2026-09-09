@@ -1,191 +1,217 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { fetchStories, createStory, triggerRun, fetchWorkflowSteps, syncTasks } from '../../services/api';
+import { 
+  fetchStories, 
+  fetchAdminMetrics,
+  fetchAuditLogs,
+  fetchConnectorStatus,
+  syncTasks,
+  triggerRun
+} from '../../services/api';
+import { DashboardLayout } from '../../layouts/DashboardLayout';
 import '../../styles/dashboard.css';
 
-const STATUS_CLASS = {
-  'TO-DO': 'todo', 'IN-PROGRESS': 'inprogress',
-  'QA-TESTING': 'qa-testing', 'DONE': 'done', 'INVALID': 'invalid'
-};
-
-const AGENT_ICONS = {
-  Intake: '🔍', RepoAnalysis: '📁', Developer: '💻',
-  Validator: '✅', BranchPR: '🔀', Comment: '💬', Rework: '🔁'
-};
-
 export default function PODashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [runningId, setRunningId] = useState(null);
-  const [runResult, setRunResult] = useState(null);
-  const [selectedStory, setSelectedStory] = useState(null);
-  const [steps, setSteps] = useState([]);
-  const [stepsLoading, setStepsLoading] = useState(false);
+  
+  // Tab state: 'dashboard', 'new-story', 'connectors'
+  const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Dashboard states
+  const [metrics, setMetrics] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [polling, setPolling] = useState(false);
+  
+  // Connectors states
+  const [connectorStatus, setConnectorStatus] = useState(null);
+  const [connectorLoading, setConnectorLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
-  const [form, setForm] = useState({
-    title: '', description: '', acceptance_criteria: '',
-    source_branch: '', jira_story_key: '',
-    repository_details: '[{"name": "", "url": "", "branch": "main"}]'
+  // New Story Form states
+  const [formData, setFormData] = useState({
+    title: '', description: '', acceptance_criteria: ''
   });
 
-  useEffect(() => { loadStories(); }, []);
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(() => {
+      setPolling(p => !p);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
-  async function loadStories() {
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      loadData();
+    } else if (activeTab === 'connectors') {
+      loadConnectorStatus();
+    }
+  }, [polling, activeTab]);
+
+  async function loadData() {
     try {
       setLoading(true);
-      setError(null);
       const data = await fetchStories();
       setStories(data);
-    } catch (e) {
-      setError(e.response?.data?.error || 'Failed to load stories.');
+      
+      const m = await fetchAdminMetrics();
+      setMetrics(m);
+
+      const aud = await fetchAuditLogs({ limit: 10 });
+      setLogs(aud);
+    } catch (error) {
+      console.error('Error loading PO dashboard:', error);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleCreate(e) {
-    e.preventDefault();
+  async function loadConnectorStatus() {
     try {
-      let repoDetails = [];
-      try { repoDetails = JSON.parse(form.repository_details); } catch {}
-      await createStory({ ...form, repository_details: repoDetails });
-      setShowModal(false);
-      setForm({ title:'', description:'', acceptance_criteria:'', source_branch:'', jira_story_key:'', repository_details:'[{"name":"","url":"","branch":"main"}]' });
-      loadStories();
+      setConnectorLoading(true);
+      const data = await fetchConnectorStatus();
+      setConnectorStatus(data);
     } catch (e) {
-      setError(e.response?.data?.error || 'Failed to create story.');
-    }
-  }
-
-  async function handleSync() {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await syncTasks();
-      alert(`Sync Complete: ${result.stories_created} new stories imported. (${result.stories_skipped} skipped).`);
-      loadStories();
-    } catch (e) {
-      setError(e.response?.data?.error || 'Failed to sync tasks.');
-      setLoading(false);
-    }
-  }
-
-  async function handleRun(story) {
-    if (!window.confirm(`Trigger DEVAA run for "${story.title}"?\nThis will start all 8 agents.`)) return;
-    setRunningId(story.id);
-    setRunResult(null);
-    try {
-      const result = await triggerRun(story.id);
-      setRunResult({ id: story.id, ...result });
-      loadStories();
-    } catch (e) {
-      setRunResult({ id: story.id, success: false, error: e.response?.data?.error || 'Run failed.' });
+      console.error('Error fetching connector status:', e);
     } finally {
-      setRunningId(null);
+      setConnectorLoading(false);
     }
   }
 
-  async function handleViewSteps(story) {
-    setSelectedStory(story);
-    setStepsLoading(true);
+  async function handleManualSync() {
+    setSyncing(true);
     try {
-      const workflows = story.workflows || [];
-      if (workflows.length > 0) {
-        const data = await fetchWorkflowSteps(workflows[0].id);
-        setSteps(data);
-      } else {
-        setSteps([]);
-      }
-    } catch { setSteps([]); }
-    setStepsLoading(false);
+      await syncTasks();
+      alert('Sync completed successfully!');
+      // Refresh connector and stories
+      loadConnectorStatus();
+      loadData();
+    } catch (e) {
+      console.error(e);
+      alert('Error syncing stories: ' + (e.response?.data?.error || e.message));
+    } finally {
+      setSyncing(false);
+    }
   }
 
-  const counts = {
-    total: stories.length,
-    todo: stories.filter(s => s.status === 'TO-DO').length,
-    inprogress: stories.filter(s => s.status === 'IN-PROGRESS').length,
-    qa: stories.filter(s => s.status === 'QA-TESTING').length,
-    done: stories.filter(s => s.status === 'DONE').length,
+  const handleRunDevaa = async (storyId) => {
+    try {
+      const branch = prompt('Enter a branch name (e.g. feature/devaa-update):', 'feature/story-' + storyId);
+      if (!branch) return;
+
+      await triggerRun(storyId, branch);
+      alert('Pipeline triggered! Refreshing status in a moment.');
+      setTimeout(loadData, 2000);
+    } catch (error) {
+      alert('Failed to trigger workflow: ' + (error.response?.data?.error || error.message));
+    }
   };
 
+  const handleCreateStory = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/stories/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(formData)
+      });
+      if (!response.ok) throw new Error('Failed to create story');
+      setFormData({ title: '', description: '', acceptance_criteria: '' });
+      alert('Story created successfully!');
+      setActiveTab('dashboard');
+    } catch (error) {
+      alert('Error creating story: ' + error.message);
+    }
+  };
+
+  const summary = metrics?.summary || {};
+  const statusCounts = {
+    'todo': stories.filter(s => s.status === 'todo').length,
+    'in-progress': stories.filter(s => s.status === 'in-progress').length,
+    'qa-testing': stories.filter(s => s.status === 'qa-testing').length,
+    'done': stories.filter(s => s.status === 'done').length
+  };
+
+  const TABS = [
+    { id: 'dashboard', label: '📊 Dashboard' },
+    { id: 'new-story', label: '➕ New Story' },
+    { id: 'connectors', label: '🔌 Connectors' }
+  ];
+
   return (
-    <div className="da-page">
-      {/* Header */}
-      <header className="da-header">
-        <div className="da-header-left">
-          <span className="da-logo">DEVAA</span>
-          <span className="da-persona-badge po">Product Owner</span>
-        </div>
-        <div className="da-header-right">
-          <span className="da-user-info">👤 {user?.name}</span>
-          <button className="da-logout-btn" onClick={logout}>Sign Out</button>
-        </div>
-      </header>
-
-      <div className="da-body">
-        {error && <div className="da-alert error">⚠ {error}</div>}
-        {runResult && (
-          <div className={`da-alert ${runResult.success ? 'success' : 'error'}`}>
-            {runResult.success
-              ? `✅ Run complete! PR: ${runResult.pr_url || 'Created'} · ${runResult.loop_iterations} iteration(s)`
-              : `❌ Run failed: ${runResult.error}`}
+    <DashboardLayout 
+      title="Product Owner"
+      personaClass="po"
+      tabs={TABS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+    >
+      {/* ── DASHBOARD VIEW ── */}
+      {activeTab === 'dashboard' && (
+        <div className="da-body">
+          <div className="da-stats-grid">
+            <div className="da-stat-card"><div className="da-stat-label">Total Stories</div><div className="da-stat-value purple">{stories.length}</div></div>
+            <div className="da-stat-card"><div className="da-stat-label">To Do</div><div className="da-stat-value">{statusCounts['todo']}</div></div>
+            <div className="da-stat-card"><div className="da-stat-label">In Progress</div><div className="da-stat-value blue">{statusCounts['in-progress']}</div></div>
+            <div className="da-stat-card"><div className="da-stat-label">QA Testing</div><div className="da-stat-value yellow">{statusCounts['qa-testing']}</div></div>
+            <div className="da-stat-card"><div className="da-stat-label">Done</div><div className="da-stat-value green">{statusCounts['done']}</div></div>
           </div>
-        )}
 
-        {/* Stats */}
-        <div className="da-stats-grid">
-          <div className="da-stat-card"><div className="da-stat-label">Total Stories</div><div className="da-stat-value purple">{counts.total}</div></div>
-          <div className="da-stat-card"><div className="da-stat-label">TO-DO</div><div className="da-stat-value">{counts.todo}</div></div>
-          <div className="da-stat-card"><div className="da-stat-label">In Progress</div><div className="da-stat-value blue">{counts.inprogress}</div></div>
-          <div className="da-stat-card"><div className="da-stat-label">QA Testing</div><div className="da-stat-value yellow">{counts.qa}</div></div>
-          <div className="da-stat-card"><div className="da-stat-label">Done</div><div className="da-stat-value green">{counts.done}</div></div>
-        </div>
-
-        {/* Two-panel layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: selectedStory ? '1fr 380px' : '1fr', gap: '1.5rem' }}>
-          {/* Stories Table */}
           <div className="da-section">
-            <div className="da-section-header">
-              <span className="da-section-title">📋 My Stories</span>
-              <div>
-                <button className="da-btn da-btn-ghost" onClick={handleSync} style={{ marginRight: '0.5rem' }}>🔄 Sync Jira</button>
-                <button className="da-btn da-btn-primary" onClick={() => setShowModal(true)}>+ New Story</button>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div className="da-section-title">My Stories</div>
+              <button className="da-btn da-btn-outline" onClick={handleManualSync}>
+                🔄 Sync Jira
+              </button>
             </div>
-
+            
             {loading ? (
-              <div className="da-loading"><div className="da-spinner" /> Loading stories…</div>
+              <div className="da-loading"><div className="da-spinner"/> Loading...</div>
             ) : stories.length === 0 ? (
-              <div className="da-empty"><div className="da-empty-icon">📂</div><h3>No stories yet</h3><p>Click "+ New Story" to create your first DEVAA story.</p></div>
+              <div className="da-empty">
+                <div className="da-empty-icon">📝</div>
+                <h3>No stories found</h3>
+                <p>Create a new story to start building your product.</p>
+              </div>
             ) : (
               <div className="da-table-wrap">
                 <table className="da-table">
-                  <thead><tr>
-                    <th>Story</th><th>Jira Key</th><th>Status</th><th>Branch</th><th>Actions</th>
-                  </tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Story</th>
+                      <th>Jira Key</th>
+                      <th>Status</th>
+                      <th>Branch</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {stories.map(story => (
-                      <tr key={story.id} onClick={() => handleViewSteps(story)}>
-                        <td style={{ maxWidth: 280 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{story.title}</div>
-                          <div style={{ color: 'var(--da-muted)', fontSize: '0.75rem', marginTop: 2 }}>{story.description?.substring(0, 60)}…</div>
+                      <tr key={story.id}>
+                        <td>
+                          <strong>{story.title}</strong>
+                          <div style={{ fontSize: '0.8rem', color: '#7b82a8', marginTop: '4px' }}>
+                            {story.description.substring(0, 50)}...
+                          </div>
                         </td>
-                        <td><code style={{ fontSize: '0.78rem', color: 'var(--da-info)' }}>{story.jira_story_key || '—'}</code></td>
-                        <td><span className={`da-badge ${STATUS_CLASS[story.status] || 'todo'}`}>{story.status}</span></td>
-                        <td><code style={{ fontSize: '0.75rem', color: 'var(--da-muted)' }}>{story.source_branch || '—'}</code></td>
-                        <td onClick={e => e.stopPropagation()}>
-                          <button
-                            className="da-btn da-btn-primary"
-                            style={{ fontSize: '0.78rem', padding: '0.35rem 0.85rem' }}
-                            disabled={runningId === story.id || ['IN-PROGRESS', 'QA-TESTING'].includes(story.status)}
-                            onClick={() => handleRun(story)}
+                        <td>
+                          {story.jira_story_key ? (
+                            <span className="da-badge default">{story.jira_story_key}</span>
+                          ) : '-'}
+                        </td>
+                        <td><span className={`da-badge ${story.status}`}>{story.status.toUpperCase()}</span></td>
+                        <td>{story.current_branch || '-'}</td>
+                        <td>
+                          <button 
+                            className="da-btn da-btn-primary" 
+                            style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
+                            onClick={() => handleRunDevaa(story.id)}
+                            disabled={story.status !== 'todo'}
                           >
-                            {runningId === story.id ? '⏳ Running…' : '▶ Run'}
+                            ▶ Run
                           </button>
                         </td>
                       </tr>
@@ -195,81 +221,116 @@ export default function PODashboard() {
               </div>
             )}
           </div>
-
-          {/* Agent Steps Panel */}
-          {selectedStory && (
-            <div className="da-section">
-              <div className="da-section-header">
-                <span className="da-section-title">🤖 Agent Timeline</span>
-                <button className="da-btn da-btn-ghost" style={{ fontSize: '0.75rem' }} onClick={() => setSelectedStory(null)}>✕ Close</button>
-              </div>
-              <div style={{ background: 'var(--da-surface)', borderRadius: 'var(--da-radius)', border: '1px solid var(--da-border)', padding: '1.25rem' }}>
-                <div style={{ marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 600 }}>{selectedStory.title}</div>
-                {stepsLoading ? (
-                  <div className="da-loading"><div className="da-spinner" /></div>
-                ) : steps.length === 0 ? (
-                  <div className="da-empty" style={{ padding: '2rem' }}><div className="da-empty-icon">🤖</div><p>No agent runs yet. Click ▶ Run to start.</p></div>
-                ) : (
-                  <div className="da-timeline">
-                    {steps.map(step => (
-                      <div className="da-timeline-item" key={step.id}>
-                        <div className={`da-timeline-dot ${step.status?.toLowerCase()}`}>{AGENT_ICONS[step.step_type] || '•'}</div>
-                        <div className="da-timeline-content">
-                          <div className="da-timeline-label">{step.step_type}</div>
-                          <div className="da-timeline-meta">
-                            <span className={`da-badge ${step.status?.toLowerCase()}`}>{step.status}</span>
-                            {step.token_count > 0 && <span style={{ marginLeft: 8 }}>🪙 {step.token_count} tokens</span>}
-                            {step.guardrail_triggered && <span style={{ marginLeft: 8, color: 'var(--da-warning)' }}>⚠ Guardrail</span>}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Create Story Modal */}
-      {showModal && (
-        <div className="da-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="da-modal" onClick={e => e.stopPropagation()}>
-            <div className="da-modal-title">📋 Create New Story</div>
-            <form className="da-form" onSubmit={handleCreate}>
-              <div className="da-field">
-                <label>Title *</label>
-                <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Add user authentication" />
+      {/* ── NEW STORY VIEW ── */}
+      {activeTab === 'new-story' && (
+        <div className="da-body" style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <div className="da-section">
+            <div className="da-section-title" style={{ marginBottom: '1rem' }}>Create New Story</div>
+            <form onSubmit={handleCreateStory} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="da-form-group">
+                <label>Title</label>
+                <input 
+                  type="text" 
+                  value={formData.title}
+                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  placeholder="e.g. Add Login Page"
+                  required
+                />
               </div>
-              <div className="da-field">
-                <label>Jira Story Key</label>
-                <input value={form.jira_story_key} onChange={e => setForm({ ...form, jira_story_key: e.target.value })} placeholder="e.g., DEVAA-42" />
+              <div className="da-form-group">
+                <label>Description</label>
+                <textarea 
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  rows={4}
+                  placeholder="Detailed description..."
+                  required
+                />
               </div>
-              <div className="da-field">
-                <label>Description *</label>
-                <textarea rows={4} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Detailed description of what needs to be built..." />
+              <div className="da-form-group">
+                <label>Acceptance Criteria</label>
+                <textarea 
+                  value={formData.acceptance_criteria}
+                  onChange={e => setFormData({...formData, acceptance_criteria: e.target.value})}
+                  rows={4}
+                  placeholder="- Must have email/password fields&#10;- Must validate input"
+                  required
+                />
               </div>
-              <div className="da-field">
-                <label>Acceptance Criteria *</label>
-                <textarea rows={4} value={form.acceptance_criteria} onChange={e => setForm({ ...form, acceptance_criteria: e.target.value })} placeholder="- User can log in with email/password&#10;- Token expires in 24h&#10;- Error shown on invalid credentials" />
-              </div>
-              <div className="da-field">
-                <label>Source Branch *</label>
-                <input value={form.source_branch} onChange={e => setForm({ ...form, source_branch: e.target.value })} placeholder="e.g., main or develop" />
-              </div>
-              <div className="da-field">
-                <label>Repository Details (JSON array)</label>
-                <textarea rows={3} value={form.repository_details} onChange={e => setForm({ ...form, repository_details: e.target.value })} placeholder='[{"name":"my-repo","url":"https://github.com/org/repo","branch":"main"}]' />
-              </div>
-              <div className="da-modal-actions">
-                <button type="button" className="da-btn da-btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+                <button type="button" className="da-btn da-btn-ghost" onClick={() => setActiveTab('dashboard')}>Cancel</button>
                 <button type="submit" className="da-btn da-btn-primary">Create Story</button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+
+      {/* ── CONNECTORS VIEW ── */}
+      {activeTab === 'connectors' && (
+        <div className="da-body">
+          <div className="da-section">
+            <div className="da-section-title" style={{ marginBottom: '1.5rem' }}>Active Task Connectors</div>
+            
+            {connectorLoading ? (
+               <div className="da-loading"><div className="da-spinner"/> Checking Connectors...</div>
+            ) : connectorStatus && connectorStatus.active_provider !== 'none' ? (
+              <div className="da-connector-card">
+                <div className="da-connector-header">
+                  <div className="da-connector-icon">
+                    {connectorStatus.active_provider === 'jira' ? '📘' : '🔌'}
+                  </div>
+                  <div className="da-connector-info">
+                    <h3>{(connectorStatus.active_provider || '').toUpperCase()}</h3>
+                    <p>Connected via Environment (.env)</p>
+                  </div>
+                  <div className="da-connector-status-badge active">
+                    ● Active
+                  </div>
+                </div>
+                
+                <div className="da-connector-details">
+                  <div className="da-detail-row">
+                    <span>Account Email:</span>
+                    <strong>{connectorStatus.details?.account || 'N/A'}</strong>
+                  </div>
+                  {connectorStatus.details?.base_url && (
+                    <div className="da-detail-row">
+                      <span>Base URL:</span>
+                      <strong>{connectorStatus.details.base_url}</strong>
+                    </div>
+                  )}
+                  {connectorStatus.project && (
+                    <div className="da-detail-row">
+                      <span>Project:</span>
+                      <strong>{connectorStatus.project}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div className="da-connector-actions" style={{ marginTop: '1.5rem' }}>
+                  <button 
+                    className="da-btn da-btn-primary" 
+                    onClick={handleManualSync}
+                    disabled={syncing}
+                  >
+                    {syncing ? 'Syncing...' : '🔄 Trigger Manual Sync'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="da-empty">
+                <div className="da-empty-icon">🔌</div>
+                <h3>No Connectors Configured</h3>
+                <p>To pull stories automatically from Jira or Linear, update your `.env` file with the provider credentials.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </DashboardLayout>
   );
 }

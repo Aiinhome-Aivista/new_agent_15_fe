@@ -114,4 +114,10 @@ export const fetchUsers = async () => {
   return r.data;
 };
 
+// ── Connectors ─────────────────────────────────────────────────────────────────
+export const fetchConnectorStatus = async () => {
+  const r = await apiClient.get('/api/connectors/status');
+  return r.data;
+};
+
 export default apiClient;
