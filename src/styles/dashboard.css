@@ -259,7 +259,7 @@
   transition: background 0.15s;
   cursor: pointer;
 }
-.da-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.da-table tbody tr:hover { background: var(--da-surface-2); }
 
 /* ── Status Badge ────────────────────────────────────────────── */
 .da-badge {
