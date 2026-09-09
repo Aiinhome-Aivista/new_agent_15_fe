@@ -21,8 +21,6 @@ export default function PODashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // Dashboard states
-  const [metrics, setMetrics] = useState(null);
-  const [logs, setLogs] = useState([]);
   const [polling, setPolling] = useState(false);
   
   // Connectors states
@@ -56,12 +54,6 @@ export default function PODashboard() {
       setLoading(true);
       const data = await fetchStories();
       setStories(data);
-      
-      const m = await fetchAdminMetrics();
-      setMetrics(m);
-
-      const aud = await fetchAuditLogs({ limit: 10 });
-      setLogs(aud);
     } catch (error) {
       console.error('Error loading PO dashboard:', error);
     } finally {
@@ -130,7 +122,6 @@ export default function PODashboard() {
     }
   };
 
-  const summary = metrics?.summary || {};
   const statusCounts = {
     'todo': stories.filter(s => s.status === 'todo').length,
     'in-progress': stories.filter(s => s.status === 'in-progress').length,
