@@ -186,6 +186,7 @@ export default function PODashboard() {
                     <tr>
                       <th>Story</th>
                       <th>Jira Key</th>
+                      <th>Assignee</th>
                       <th>Status</th>
                       <th>Branch</th>
                       <th>Actions</th>
@@ -204,6 +205,11 @@ export default function PODashboard() {
                           {story.jira_story_key ? (
                             <span className="da-badge default">{story.jira_story_key}</span>
                           ) : '-'}
+                        </td>
+                        <td>
+                          {story.repository_details && story.repository_details.length > 0 && story.repository_details[0].external_assignee 
+                            ? story.repository_details[0].external_assignee 
+                            : '-'}
                         </td>
                         <td><span className={`da-badge ${story.status}`}>{story.status.toUpperCase()}</span></td>
                         <td>{story.current_branch || '-'}</td>
