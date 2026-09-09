@@ -147,10 +147,10 @@ export default function PODashboard() {
   };
 
   const statusCounts = {
-    'todo': stories.filter(s => s.status === 'todo').length,
-    'in-progress': stories.filter(s => s.status === 'in-progress').length,
-    'qa-testing': stories.filter(s => s.status === 'qa-testing').length,
-    'done': stories.filter(s => s.status === 'done').length
+    'todo': stories.filter(s => (s.status || '').toLowerCase().replace('-', '') === 'todo').length,
+    'in-progress': stories.filter(s => ['in-progress', 'in_progress'].includes((s.status || '').toLowerCase())).length,
+    'qa-testing': stories.filter(s => ['qa-testing', 'qa_testing'].includes((s.status || '').toLowerCase())).length,
+    'done': stories.filter(s => (s.status || '').toLowerCase() === 'done').length
   };
 
   const TABS = [
@@ -219,9 +219,11 @@ export default function PODashboard() {
                       <tr key={story.id}>
                         <td>
                           <strong>{story.title}</strong>
-                          <div style={{ fontSize: '0.8rem', color: '#7b82a8', marginTop: '4px' }}>
-                            {story.description.substring(0, 50)}...
-                          </div>
+                          {story.description && (
+                            <div style={{ fontSize: '0.8rem', color: '#7b82a8', marginTop: '4px' }}>
+                              {story.description.substring(0, 50)}...
+                            </div>
+                          )}
                         </td>
                         <td>
                           {story.jira_story_key ? (
@@ -233,14 +235,14 @@ export default function PODashboard() {
                             ? story.repository_details[0].external_assignee 
                             : '-'}
                         </td>
-                        <td><span className={`da-badge ${story.status}`}>{story.status.toUpperCase()}</span></td>
-                        <td>{story.current_branch || '-'}</td>
+                        <td><span className={`da-badge ${(story.status || '').toLowerCase()}`}>{(story.status || '').toUpperCase()}</span></td>
+                        <td>{story.source_branch || story.current_branch || '-'}</td>
                         <td>
                           <button 
                             className="da-btn da-btn-primary" 
                             style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
                             onClick={() => handleRunDevaa(story.id)}
-                            disabled={story.status !== 'todo'}
+                            disabled={(story.status || '').toLowerCase().replace('-', '') !== 'todo'}
                           >
                             <Play size={14} /> Run
                           </button>
