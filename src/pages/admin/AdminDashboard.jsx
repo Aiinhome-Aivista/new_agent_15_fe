@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchAdminMetrics, fetchAuditLogs, fetchGuardrailEvents, fetchAllWorkflows, fetchUsers } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
+import { PieChart, Settings, Shield, ClipboardList, Users, AlertTriangle } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const TABS = [
-  { id: 'overview', label: '📊 Overview' },
-  { id: 'workflows', label: '⚙️ Workflows' },
-  { id: 'guardrails', label: '🛡 Guardrails' },
-  { id: 'audit', label: '📋 Audit' },
-  { id: 'users', label: '👥 Users' }
+  { id: 'overview', label: <><PieChart size={16} /> Overview</> },
+  { id: 'workflows', label: <><Settings size={16} /> Workflows</> },
+  { id: 'guardrails', label: <><Shield size={16} /> Guardrails</> },
+  { id: 'audit', label: <><ClipboardList size={16} /> Audit</> },
+  { id: 'users', label: <><Users size={16} /> Users</> }
 ];
 
 const METRIC_LABELS = {
@@ -68,7 +69,7 @@ export default function AdminDashboard() {
       onTabChange={loadTab}
     >
       <div className="da-body">
-        {error && <div className="da-alert error">⚠ {error}</div>}
+        {error && <div className="da-alert error"><AlertTriangle size={16} /> {error}</div>}
 
         {loading && <div className="da-loading"><div className="da-spinner" /> Loading…</div>}
 
@@ -99,12 +100,29 @@ export default function AdminDashboard() {
                 <table className="da-table">
                   <thead><tr><th>Metric</th><th>Value</th></tr></thead>
                   <tbody>
-                    {Object.entries(metrics?.metrics || {}).map(([key, val]) => (
-                      <tr key={key}>
-                        <td>{METRIC_LABELS[key] || key}</td>
-                        <td><strong>{typeof val === 'number' ? (val % 1 !== 0 ? val.toFixed(2) : val) : val}</strong></td>
-                      </tr>
-                    ))}
+                    {Object.entries(metrics?.metrics || {}).map(([key, val]) => {
+                      let displayVal = val;
+                      if (val && typeof val === 'object' && val.avg_value !== undefined) {
+                        displayVal = val.avg_value;
+                      }
+                      return (
+                        <tr key={key}>
+                          <td>{METRIC_LABELS[key] || key}</td>
+                          <td>
+                            <strong>
+                              {typeof displayVal === 'number' 
+                                ? (displayVal % 1 !== 0 ? displayVal.toFixed(2) : displayVal) 
+                                : String(displayVal)}
+                            </strong>
+                            {val && typeof val === 'object' && val.sample_count !== undefined && (
+                              <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--da-muted)' }}>
+                                ({val.sample_count} samples)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -122,7 +140,7 @@ export default function AdminDashboard() {
                 <tbody>
                   {workflows.map(wf => (
                     <tr key={wf.id}>
-                      <td>{wf.id.substring(0,8)}</td>
+                      <td>{String(wf.id).substring(0,8)}</td>
                       <td>{wf.story_id}</td>
                       <td><span className={`da-badge ${wf.status === 'completed' ? 'green' : wf.status === 'failed' ? 'red' : 'blue'}`}>{wf.status}</span></td>
                       <td>{wf.branch_name || '-'}</td>

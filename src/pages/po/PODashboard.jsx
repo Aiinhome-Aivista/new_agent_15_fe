@@ -8,9 +8,12 @@ import {
   triggerRun
 } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
+import { useDialog } from '../../contexts/DialogContext';
+import { RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 export default function PODashboard() {
+  const { showAlert, showPrompt } = useDialog();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -82,13 +85,13 @@ export default function PODashboard() {
     setSyncing(true);
     try {
       await syncTasks();
-      alert('Sync completed successfully!');
+      await showAlert('Sync completed successfully!');
       // Refresh connector and stories
       loadConnectorStatus();
       loadData();
     } catch (e) {
       console.error(e);
-      alert('Error syncing stories: ' + (e.response?.data?.error || e.message));
+      await showAlert('Error syncing stories: ' + (e.response?.data?.error || e.message));
     } finally {
       setSyncing(false);
     }
@@ -96,14 +99,14 @@ export default function PODashboard() {
 
   const handleRunDevaa = async (storyId) => {
     try {
-      const branch = prompt('Enter a branch name (e.g. feature/devaa-update):', 'feature/story-' + storyId);
+      const branch = await showPrompt('Enter a branch name (e.g. feature/devaa-update):', 'feature/story-' + storyId);
       if (!branch) return;
 
       await triggerRun(storyId, branch);
-      alert('Pipeline triggered! Refreshing status in a moment.');
+      await showAlert('Pipeline triggered! Refreshing status in a moment.');
       setTimeout(loadData, 2000);
     } catch (error) {
-      alert('Failed to trigger workflow: ' + (error.response?.data?.error || error.message));
+      await showAlert('Failed to trigger workflow: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -120,10 +123,10 @@ export default function PODashboard() {
       });
       if (!response.ok) throw new Error('Failed to create story');
       setFormData({ title: '', description: '', acceptance_criteria: '' });
-      alert('Story created successfully!');
+      await showAlert('Story created successfully!');
       setActiveTab('dashboard');
     } catch (error) {
-      alert('Error creating story: ' + error.message);
+      await showAlert('Error creating story: ' + error.message);
     }
   };
 
@@ -136,9 +139,9 @@ export default function PODashboard() {
   };
 
   const TABS = [
-    { id: 'dashboard', label: '📊 Dashboard' },
-    { id: 'new-story', label: '➕ New Story' },
-    { id: 'connectors', label: '🔌 Connectors' }
+    { id: 'dashboard', label: <><LayoutDashboard size={16} /> Dashboard</> },
+    { id: 'new-story', label: <><Plus size={16} /> New Story</> },
+    { id: 'connectors', label: <><Plug size={16} /> Connectors</> }
   ];
 
   return (
@@ -164,7 +167,7 @@ export default function PODashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div className="da-section-title">My Stories</div>
               <button className="da-btn da-btn-outline" onClick={handleManualSync}>
-                🔄 Sync Jira
+                <RefreshCw size={16} className={syncing ? 'lucide-animated-spin' : ''} /> Sync Jira
               </button>
             </div>
             
@@ -172,7 +175,7 @@ export default function PODashboard() {
               <div className="da-loading"><div className="da-spinner"/> Loading...</div>
             ) : stories.length === 0 ? (
               <div className="da-empty">
-                <div className="da-empty-icon">📝</div>
+                <div className="da-empty-icon"><FileText size={48} /></div>
                 <h3>No stories found</h3>
                 <p>Create a new story to start building your product.</p>
               </div>
@@ -211,7 +214,7 @@ export default function PODashboard() {
                             onClick={() => handleRunDevaa(story.id)}
                             disabled={story.status !== 'todo'}
                           >
-                            ▶ Run
+                            <Play size={14} /> Run
                           </button>
                         </td>
                       </tr>
@@ -281,7 +284,7 @@ export default function PODashboard() {
               <div className="da-connector-card">
                 <div className="da-connector-header">
                   <div className="da-connector-icon">
-                    {connectorStatus.active_provider === 'jira' ? '📘' : '🔌'}
+                    {connectorStatus.active_provider === 'jira' ? <BookOpen size={24} /> : <Plug size={24} />}
                   </div>
                   <div className="da-connector-info">
                     <h3>{(connectorStatus.active_provider || '').toUpperCase()}</h3>
@@ -317,13 +320,13 @@ export default function PODashboard() {
                     onClick={handleManualSync}
                     disabled={syncing}
                   >
-                    {syncing ? 'Syncing...' : '🔄 Trigger Manual Sync'}
+                    <RefreshCw size={16} className={syncing ? 'lucide-animated-spin' : ''} /> {syncing ? 'Syncing...' : 'Trigger Manual Sync'}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="da-empty">
-                <div className="da-empty-icon">🔌</div>
+                <div className="da-empty-icon"><Plug size={48} /></div>
                 <h3>No Connectors Configured</h3>
                 <p>To pull stories automatically from Jira or Linear, update your `.env` file with the provider credentials.</p>
               </div>

@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchQAQueue, submitQADecision } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
+import { useDialog } from '../../contexts/DialogContext';
+import { Search, RefreshCw, CheckCircle, AlertTriangle, XCircle, Check, X } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const TABS = [
-  { id: 'queue', label: '🔍 QA Queue' }
+  { id: 'queue', label: <><Search size={16} /> QA Queue</> }
 ];
 
 export default function QADashboard() {
   const { user, logout } = useAuth();
+  const { showConfirm } = useDialog();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,11 +38,13 @@ export default function QADashboard() {
   }
 
   async function handleApprove(story) {
-    if (!window.confirm(`Approve and merge PR for story: "${story.title}"?\n\nThis action is irreversible — the story will be marked DONE.`)) return;
+    const confirmed = await showConfirm(`Approve and merge PR for story: "${story.title}"?\n\nThis action is irreversible — the story will be marked DONE.`);
+    if (!confirmed) return;
+    
     setSubmitting(true); setError(null); setSuccess(null);
     try {
       await submitQADecision(story.id, 'approved', '');
-      setSuccess(`✅ "${story.title}" approved and merged. Story marked DONE.`);
+      setSuccess(`"${story.title}" approved and merged. Story marked DONE.`);
       setSelected(null);
       loadQueue();
     } catch (e) {
@@ -52,7 +57,7 @@ export default function QADashboard() {
     setSubmitting(true); setError(null); setSuccess(null);
     try {
       await submitQADecision(story.id, 'rejected', rejectComment);
-      setSuccess(`🔁 "${story.title}" rejected. Story returned to TO-DO for rework.`);
+      setSuccess(`"${story.title}" rejected. Story returned to TO-DO for rework.`);
       setRejectModal(false); setRejectComment(''); setSelected(null);
       loadQueue();
     } catch (e) {
@@ -69,8 +74,8 @@ export default function QADashboard() {
       onTabChange={setTab}
     >
       <div className="da-body">
-        {error && <div className="da-alert error">⚠ {error}</div>}
-        {success && <div className="da-alert success">{success}</div>}
+        {error && <div className="da-alert error"><AlertTriangle size={16} /> {error}</div>}
+        {success && <div className="da-alert success"><CheckCircle size={16} /> {success}</div>}
 
         {/* Stats */}
         <div className="da-stats-grid">
@@ -83,15 +88,15 @@ export default function QADashboard() {
             {/* Queue */}
             <div className="da-section">
               <div className="da-section-header">
-                <span className="da-section-title">🔍 QA Review Queue</span>
-                <button className="da-btn da-btn-ghost" onClick={loadQueue}>↻ Refresh</button>
+                <span className="da-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Search size={20} /> QA Review Queue</span>
+                <button className="da-btn da-btn-ghost" onClick={loadQueue}><RefreshCw size={14} /> Refresh</button>
               </div>
 
               {loading ? (
                 <div className="da-loading"><div className="da-spinner" /> Loading queue…</div>
               ) : queue.length === 0 ? (
                 <div className="da-empty">
-                  <div className="da-empty-icon">✅</div>
+                  <div className="da-empty-icon"><CheckCircle size={48} /></div>
                   <h3>Queue is clear!</h3>
                   <p>No stories are awaiting QA review.</p>
                 </div>
@@ -173,10 +178,10 @@ export default function QADashboard() {
                 ) : (
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
                     <button className="da-btn da-btn-danger" style={{ flex: 1 }} onClick={() => setRejectModal(true)} disabled={submitting}>
-                      ❌ Reject (Rework)
+                      <X size={16} /> Reject (Rework)
                     </button>
                     <button className="da-btn da-btn-primary" style={{ flex: 1, background: 'var(--da-success)', borderColor: 'var(--da-success)', color: '#fff' }} onClick={() => handleApprove(selected)} disabled={submitting || !selected.pr}>
-                      ✅ Approve & Merge
+                      <Check size={16} /> Approve & Merge
                     </button>
                   </div>
                 )}

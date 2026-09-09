@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DialogProvider } from './contexts/DialogContext';
 
 // Layouts
 import { AppLayout } from './layouts/AppLayout';
@@ -53,11 +54,12 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* ── Public ── */}
-            <Route element={<AuthLayout />}>
-              <Route path="/" element={<LandingPage />} />
+        <DialogProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* ── Public ── */}
+              <Route element={<AuthLayout />}>
+                <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
             </Route>
 
@@ -121,6 +123,7 @@ function App() {
             } />
           </Routes>
         </BrowserRouter>
+        </DialogProvider>
       </AuthProvider>
     </ThemeProvider>
   );

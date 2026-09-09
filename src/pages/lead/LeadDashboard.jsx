@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchPullRequests, fetchPullRequest, fetchAuditLogs } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
+import { GitPullRequest, ClipboardList, AlertTriangle, X } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const PR_STATUS_CLASS = { open: 'open', merged: 'merged', rejected: 'rejected', closed: 'todo' };
 
 const TABS = [
-  { id: 'prs', label: '🔀 Pull Requests' },
-  { id: 'audit', label: '📋 Audit Logs' }
+  { id: 'prs', label: <><GitPullRequest size={16} /> Pull Requests</> },
+  { id: 'audit', label: <><ClipboardList size={16} /> Audit Logs</> }
 ];
 
 export default function LeadDashboard() {
@@ -67,7 +68,7 @@ export default function LeadDashboard() {
       onTabChange={handleTabChange}
     >
       <div className="da-body">
-        {error && <div className="da-alert error">⚠ {error}</div>}
+        {error && <div className="da-alert error"><AlertTriangle size={16} /> {error}</div>}
 
         <div className="da-stats-grid">
           <div className="da-stat-card"><div className="da-stat-label">Total PRs</div><div className="da-stat-value blue">{prs.length}</div></div>
@@ -83,7 +84,7 @@ export default function LeadDashboard() {
               {loading ? (
                 <div className="da-loading"><div className="da-spinner" /> Loading PRs…</div>
               ) : prs.length === 0 ? (
-                <div className="da-empty"><div className="da-empty-icon">🔀</div><h3>No pull requests yet</h3><p>PRs appear here after the DEVAA pipeline runs.</p></div>
+                <div className="da-empty"><div className="da-empty-icon"><GitPullRequest size={48} /></div><h3>No pull requests yet</h3><p>PRs appear here after the DEVAA pipeline runs.</p></div>
               ) : (
                 <div className="da-table-wrap">
                   <table className="da-table">
@@ -112,7 +113,7 @@ export default function LeadDashboard() {
               <div className="da-section" style={{ position: 'sticky', top: '1.5rem', alignSelf: 'start', maxHeight: 'calc(100vh - 8rem)', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div className="da-section-title">PR Details</div>
-                  <button className="da-btn da-btn-ghost" onClick={() => setSelectedPR(null)}>✕</button>
+                  <button className="da-btn da-btn-ghost" onClick={() => setSelectedPR(null)}><X size={16} /></button>
                 </div>
 
                 {detailLoading ? (

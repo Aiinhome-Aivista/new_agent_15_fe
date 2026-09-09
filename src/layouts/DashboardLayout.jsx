@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Check, LogOut, User } from 'lucide-react';
 import '../styles/dashboard.css';
 
 export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabChange, children }) {
@@ -12,7 +13,7 @@ export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabCha
         <div className="da-sidebar">
           <div className="da-sidebar-header">
             <span className="da-logo" style={{ color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ background: 'var(--da-accent)', color: '#FFF', borderRadius: '4px', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>✔</div>
+              <div style={{ background: 'var(--da-accent)', color: '#FFF', borderRadius: '4px', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={16} strokeWidth={3} /></div>
               DEVAA
             </span>
           </div>
@@ -29,7 +30,7 @@ export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabCha
           </div>
           <div className="da-sidebar-footer">
             <button className="da-sidebar-logout" onClick={logout}>
-              <span style={{ marginRight: '0.5rem' }}>↪</span> Logout
+              <LogOut size={16} style={{ marginRight: '0.5rem' }} /> Logout
             </button>
           </div>
         </div>
@@ -41,7 +42,7 @@ export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabCha
               <span className={`da-persona-badge ${personaClass}`}>{title}</span>
             </div>
             <div className="da-header-right">
-              <span className="da-user-info">👤 {user?.name}</span>
+              <span className="da-user-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><User size={16} /> {user?.name}</span>
             </div>
           </header>
           <div className="da-main-content">

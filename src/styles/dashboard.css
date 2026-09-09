@@ -331,7 +331,7 @@
 /* ── Form Elements ───────────────────────────────────────────── */
 .da-form { display: flex; flex-direction: column; gap: 1.25rem; }
 
-.da-field label {
+.da-form-group label {
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
@@ -341,9 +341,9 @@
   letter-spacing: 0.05em;
 }
 
-.da-field input,
-.da-field textarea,
-.da-field select {
+.da-form-group input,
+.da-form-group textarea,
+.da-form-group select {
   width: 100%;
   background: var(--da-surface-2);
   border: 1px solid var(--da-border);
@@ -357,11 +357,11 @@
   font-family: inherit;
   resize: vertical;
 }
-.da-field input:focus,
-.da-field textarea:focus,
-.da-field select:focus {
+.da-form-group input:focus,
+.da-form-group textarea:focus,
+.da-form-group select:focus {
   border-color: var(--da-accent);
-  box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+  box-shadow: 0 0 0 3px rgba(255,90,20,0.15);
 }
 
 /* ── Modals / Forms ────────────────────────────────────────────── */
@@ -461,4 +461,73 @@
   .da-stats-grid { grid-template-columns: repeat(2, 1fr); }
   .da-table { font-size: 0.78rem; }
   .da-table th, .da-table td { padding: 0.65rem 0.75rem; }
+}
+/* ── Animations ──────────────────────────────────────────────── */
+.lucide-animated-spin {
+  animation: lucide-spin 2s linear infinite;
+}
+
+@keyframes lucide-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Connector Card ──────────────────────────────────────────── */
+.da-connector-card {
+  border: 1px solid var(--da-border-orange);
+  border-radius: var(--da-radius);
+  padding: 1.5rem;
+  background: var(--da-surface-2);
+  margin-top: 1rem;
+}
+
+.da-connector-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.da-connector-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--da-accent);
+}
+
+.da-connector-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: var(--da-text);
+}
+
+.da-connector-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--da-muted);
+}
+
+.da-connector-status-badge {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--da-success);
+}
+
+.da-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: var(--da-text);
+}
+
+.da-detail-row span {
+  color: var(--da-muted);
+  width: 120px;
 }
