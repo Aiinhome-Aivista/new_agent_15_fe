@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   fetchStories, 
-  fetchAdminMetrics,
-  fetchAuditLogs,
   fetchConnectorStatus,
   syncTasks,
   triggerRun
@@ -12,6 +10,18 @@ import { useDialog } from '../../contexts/DialogContext';
 import { RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText } from 'lucide-react';
 import '../../styles/dashboard.css';
 
+// Read sync interval from .env (defaults to 10 minutes)
+const getSyncIntervalMs = () => {
+  const envVal = import.meta.env.VITE_SYNC_INTERVAL_MINUTES ||
+                 import.meta.env.VITE_SYNC_INTERVAL ||
+                 import.meta.env.VITE_SYNC_INTERVAL_MS;
+  if (!envVal) return 10 * 60 * 1000;
+  const num = parseFloat(envVal);
+  if (isNaN(num) || num <= 0) return 10 * 60 * 1000;
+  // If <= 120, treat as minutes (e.g., 10 -> 10 mins = 600,000ms), otherwise milliseconds
+  return num <= 120 ? num * 60 * 1000 : num;
+};
+
 export default function PODashboard() {
   const { showAlert, showPrompt } = useDialog();
   const [stories, setStories] = useState([]);
@@ -20,13 +30,12 @@ export default function PODashboard() {
   // Tab state: 'dashboard', 'new-story', 'connectors'
   const [activeTab, setActiveTab] = useState('dashboard');
   
-  // Dashboard states
-  const [polling, setPolling] = useState(false);
-  
   // Connectors states
   const [connectorStatus, setConnectorStatus] = useState(null);
   const [connectorLoading, setConnectorLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [lastSynced, setLastSynced] = useState(null);
+  const syncIntervalMs = getSyncIntervalMs();
 
   // New Story Form states
   const [formData, setFormData] = useState({
@@ -34,12 +43,16 @@ export default function PODashboard() {
   });
 
   useEffect(() => {
-    loadData();
+    // Initial sync & load
+    performSync(true);
+
+    // Call sync API at duration specified in .env (10 min duration)
     const interval = setInterval(() => {
-      setPolling(p => !p);
-    }, 10000);
+      performSync(true);
+    }, syncIntervalMs);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [syncIntervalMs]);
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -47,7 +60,7 @@ export default function PODashboard() {
     } else if (activeTab === 'connectors') {
       loadConnectorStatus();
     }
-  }, [polling, activeTab]);
+  }, [activeTab]);
 
   async function loadData() {
     try {
@@ -73,20 +86,31 @@ export default function PODashboard() {
     }
   }
 
-  async function handleManualSync() {
+  async function performSync(silent = true) {
+    if (syncing) return;
     setSyncing(true);
     try {
       await syncTasks();
-      await showAlert('Sync completed successfully!');
-      // Refresh connector and stories
-      loadConnectorStatus();
-      loadData();
+      setLastSynced(new Date());
+      if (!silent) {
+        await showAlert('Sync completed successfully!');
+      }
+      await loadData();
+      if (activeTab === 'connectors') {
+        await loadConnectorStatus();
+      }
     } catch (e) {
-      console.error(e);
-      await showAlert('Error syncing stories: ' + (e.response?.data?.error || e.message));
+      console.error('Sync failed:', e);
+      if (!silent) {
+        await showAlert('Error syncing stories: ' + (e.response?.data?.error || e.message));
+      }
     } finally {
       setSyncing(false);
     }
+  }
+
+  async function handleManualSync() {
+    await performSync(false);
   }
 
   const handleRunDevaa = async (storyId) => {
@@ -155,11 +179,18 @@ export default function PODashboard() {
           </div>
 
           <div className="da-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div className="da-section-title">My Stories</div>
-              <button className="da-btn da-btn-outline" onClick={handleManualSync}>
-                <RefreshCw size={16} className={syncing ? 'lucide-animated-spin' : ''} /> Sync Jira
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {lastSynced && (
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                    Last synced: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (Auto: {Math.round(syncIntervalMs / 60000)}m)
+                  </span>
+                )}
+                <button className="da-btn da-btn-outline" onClick={handleManualSync} disabled={syncing}>
+                  <RefreshCw size={16} className={syncing ? 'lucide-animated-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync Jira'}
+                </button>
+              </div>
             </div>
             
             {loading ? (
@@ -311,7 +342,7 @@ export default function PODashboard() {
                   )}
                 </div>
 
-                <div className="da-connector-actions" style={{ marginTop: '1.5rem' }}>
+                <div className="da-connector-actions" style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                   <button 
                     className="da-btn da-btn-primary" 
                     onClick={handleManualSync}
@@ -319,6 +350,9 @@ export default function PODashboard() {
                   >
                     <RefreshCw size={16} className={syncing ? 'lucide-animated-spin' : ''} /> {syncing ? 'Syncing...' : 'Trigger Manual Sync'}
                   </button>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                    Auto-sync duration: {Math.round(syncIntervalMs / 60000)} minutes (configured in <code>.env</code>)
+                  </span>
                 </div>
               </div>
             ) : (
