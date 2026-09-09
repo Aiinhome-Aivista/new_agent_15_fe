@@ -39,6 +39,10 @@ export const createStory = async (payload) => {
   const r = await apiClient.post('/api/stories/', payload);
   return r.data;
 };
+export const syncTasks = async () => {
+  const r = await apiClient.post('/api/stories/sync');
+  return r.data;
+};
 export const updateStory = async (id, payload) => {
   const r = await apiClient.put(`/api/stories/${id}`, payload);
   return r.data;

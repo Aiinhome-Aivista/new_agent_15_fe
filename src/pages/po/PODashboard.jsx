@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchStories, createStory, triggerRun, fetchWorkflowSteps } from '../../services/api';
+import { fetchStories, createStory, triggerRun, fetchWorkflowSteps, syncTasks } from '../../services/api';
 import '../../styles/dashboard.css';
 
 const STATUS_CLASS = {
@@ -59,6 +59,19 @@ export default function PODashboard() {
       loadStories();
     } catch (e) {
       setError(e.response?.data?.error || 'Failed to create story.');
+    }
+  }
+
+  async function handleSync() {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await syncTasks();
+      alert(`Sync Complete: ${result.stories_created} new stories imported. (${result.stories_skipped} skipped).`);
+      loadStories();
+    } catch (e) {
+      setError(e.response?.data?.error || 'Failed to sync tasks.');
+      setLoading(false);
     }
   }
 
@@ -139,7 +152,10 @@ export default function PODashboard() {
           <div className="da-section">
             <div className="da-section-header">
               <span className="da-section-title">📋 My Stories</span>
-              <button className="da-btn da-btn-primary" onClick={() => setShowModal(true)}>+ New Story</button>
+              <div>
+                <button className="da-btn da-btn-ghost" onClick={handleSync} style={{ marginRight: '0.5rem' }}>🔄 Sync Jira</button>
+                <button className="da-btn da-btn-primary" onClick={() => setShowModal(true)}>+ New Story</button>
+              </div>
             </div>
 
             {loading ? (
