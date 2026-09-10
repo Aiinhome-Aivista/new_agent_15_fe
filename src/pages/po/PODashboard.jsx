@@ -4,14 +4,18 @@ import {
   fetchConnectorStatus,
   fetchJiraResources,
   syncTasks,
-  triggerRun
+  triggerRun,
+  updateStory
 } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
   RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText, X, User,
-  Paperclip, UploadCloud, File, Trash2, Tag, Calendar, Hash, CheckCircle2
+  Paperclip, UploadCloud, File, Trash2, Tag, Calendar, Hash, CheckCircle2,
+  Edit3, Filter, Lock, Search, Sparkles
 } from 'lucide-react';
+
+
 import '../../styles/dashboard.css';
 
 // Read sync interval from .env (defaults to 10 minutes)
@@ -116,6 +120,92 @@ export default function PODashboard() {
       handleFileSelect(e.dataTransfer.files);
     }
   };
+
+  // Table filter state: 'all' | 'devaa' | 'todo' | 'inprogress' | 'done'
+  const [tableFilter, setTableFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Helper to determine if story was created in DEVAA
+  const isDevaaStory = (story) => {
+    if (!story) return false;
+    if (story.is_created_in_devaa) return true;
+    const details = story.repository_details?.[0] || {};
+    return Boolean(
+      details.created_in_devaa ||
+      details.origin === 'devaa' ||
+      details.priority ||
+      details.story_points ||
+      details.labels ||
+      details.start_date ||
+      (details.attachments && details.attachments.length > 0) ||
+      story.external_provider === 'manual'
+    );
+  };
+
+  // Edit Story Modal states
+  const [editingStory, setEditingStory] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    acceptance_criteria: '',
+    priority: 'Medium',
+    assignee: '',
+    assignee_account_id: '',
+    story_points: '',
+    due_date: '',
+    labels: '',
+    source_branch: 'main'
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const handleOpenEditStory = (story) => {
+    const details = story.repository_details?.[0] || {};
+    let matchedAccountId = '';
+    if (jiraUsers && jiraUsers.length > 0 && details.external_assignee) {
+      const match = jiraUsers.find(u => 
+        u.displayName === details.external_assignee ||
+        u.emailAddress === details.external_assignee ||
+        u.accountId === details.external_assignee
+      );
+      if (match) matchedAccountId = match.accountId;
+    }
+
+    setEditFormData({
+      title: story.title || '',
+      description: story.description || '',
+      acceptance_criteria: story.acceptance_criteria || '',
+      priority: details.priority || 'Medium',
+      assignee: details.external_assignee || '',
+      assignee_account_id: matchedAccountId,
+      story_points: details.story_points || '',
+      due_date: details.due_date || '',
+      labels: details.labels || '',
+      source_branch: story.source_branch || story.current_branch || 'main'
+    });
+    setEditingStory(story);
+  };
+
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingStory) return;
+    setSavingEdit(true);
+    try {
+      const res = await updateStory(editingStory.id, editFormData);
+      if (res.warning) {
+        await showAlert(res.warning);
+      } else {
+        await showAlert('Story updated successfully! (Synced with Jira)');
+      }
+      setEditingStory(null);
+      await loadData();
+    } catch (err) {
+      await showAlert('Failed to update story: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
 
 
   useEffect(() => {
@@ -325,6 +415,7 @@ export default function PODashboard() {
       }
 
       await loadData();
+      setTableFilter('devaa');
       setActiveTab('dashboard');
     } catch (error) {
       await showAlert('Error creating story: ' + error.message);
@@ -334,11 +425,17 @@ export default function PODashboard() {
   };
 
   const statusCounts = {
-    'todo': stories.filter(s => (s.status || '').toLowerCase().replace('-', '') === 'todo').length,
-    'in-progress': stories.filter(s => ['in-progress', 'in_progress'].includes((s.status || '').toLowerCase())).length,
-    'qa-testing': stories.filter(s => ['qa-testing', 'qa_testing'].includes((s.status || '').toLowerCase())).length,
-    'done': stories.filter(s => (s.status || '').toLowerCase() === 'done').length
+    'all': stories.length,
+    'devaa': stories.filter(s => isDevaaStory(s)).length,
+    'todo': stories.filter(s => {
+      const st = (s.status || '').toLowerCase().replace(/[-_ ]/g, '');
+      return st === 'todo' || st === 'open';
+    }).length,
+    'in-progress': stories.filter(s => ['in-progress', 'in_progress', 'inprogress'].includes((s.status || '').toLowerCase().replace(/[-_ ]/g, ''))).length,
+    'qa-testing': stories.filter(s => ['qa-testing', 'qa_testing', 'qatesting'].includes((s.status || '').toLowerCase().replace(/[-_ ]/g, ''))).length,
+    'done': stories.filter(s => (s.status || '').toLowerCase().replace(/[-_ ]/g, '') === 'done').length
   };
+
 
   const TABS = [
     { id: 'dashboard', label: <><LayoutDashboard size={16} /> Dashboard</> },
@@ -366,22 +463,158 @@ export default function PODashboard() {
           </div>
 
           <div className="da-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div className="da-section-title">My Stories</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                <div className="da-section-title" style={{ margin: 0 }}>Stories</div>
+                
+                {/* Table Filter Tabs */}
+                <div style={{
+                  display: 'flex',
+                  background: 'var(--da-surface-2)',
+                  padding: '3px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--da-border-orange)',
+                  gap: '2px',
+                  flexWrap: 'wrap'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setTableFilter('all')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: tableFilter === 'all' ? 'var(--da-accent)' : 'transparent',
+                      color: tableFilter === 'all' ? '#FFF' : 'var(--da-text)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    All ({statusCounts['all']})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableFilter('devaa')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: tableFilter === 'devaa' ? 'var(--da-accent)' : 'transparent',
+                      color: tableFilter === 'devaa' ? '#FFF' : 'var(--da-text)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Sparkles size={12} /> Created in DEVAA ({statusCounts['devaa']})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableFilter('todo')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: tableFilter === 'todo' ? 'var(--da-accent)' : 'transparent',
+                      color: tableFilter === 'todo' ? '#FFF' : 'var(--da-text)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Edit3 size={12} /> To Do / Editable ({statusCounts['todo']})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableFilter('inprogress')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: tableFilter === 'inprogress' ? 'var(--da-accent)' : 'transparent',
+                      color: tableFilter === 'inprogress' ? '#FFF' : 'var(--da-text)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    In Progress ({statusCounts['in-progress']})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableFilter('done')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: tableFilter === 'done' ? 'var(--da-accent)' : 'transparent',
+                      color: tableFilter === 'done' ? '#FFF' : 'var(--da-text)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Done ({statusCounts['done']})
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {/* Search Bar */}
+                <div style={{ position: 'relative', minWidth: '220px' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                  <input 
+                    type="text" 
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search stories..."
+                    style={{ 
+                      paddingLeft: '32px', 
+                      paddingRight: searchQuery ? '26px' : '10px',
+                      fontSize: '0.8rem', 
+                      height: '32px', 
+                      borderRadius: 'var(--da-radius-sm)', 
+                      border: '1px solid var(--da-border-orange)',
+                      background: 'var(--da-surface-2)',
+                      width: '100%'
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
                 {lastSynced && (
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                    Last synced: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (Auto: {Math.round(syncIntervalMs / 60000)}m)
+                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Synced: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
-                <button className="da-btn da-btn-outline" onClick={handleManualSync} disabled={syncing}>
-                  <RefreshCw size={16} className={syncing ? 'lucide-animated-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync Jira'}
+                <button className="da-btn da-btn-outline" onClick={handleManualSync} disabled={syncing} style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
+                  <RefreshCw size={14} className={syncing ? 'lucide-animated-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync Jira'}
                 </button>
               </div>
             </div>
             
             {loading ? (
-              <div className="da-loading"><div className="da-spinner"/> Loading...</div>
+              <div className="da-loading"><div className="da-spinner"/> Loading stories...</div>
             ) : stories.length === 0 ? (
               <div className="da-empty">
                 <div className="da-empty-icon"><FileText size={48} /></div>
@@ -393,58 +626,167 @@ export default function PODashboard() {
                 <table className="da-table">
                   <thead>
                     <tr>
-                      <th>Story</th>
+                      <th style={{ minWidth: '240px' }}>Story</th>
                       <th>Jira Key</th>
+                      <th>Priority & Points</th>
                       <th>Assignee</th>
+                      <th>Due Date</th>
                       <th>Status</th>
-                      <th>Branch</th>
-                      <th>Actions</th>
+                      <th style={{ textAlign: 'right', minWidth: '160px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {stories.map(story => (
-                      <tr 
-                        key={story.id}
-                        onClick={() => setSelectedStory(story)}
-                        style={{ cursor: 'pointer' }}
-                        title="Click to view full story details"
-                      >
-                        <td>
-                          <strong>{story.title}</strong>
-                          {story.description && (
-                            <div style={{ fontSize: '0.8rem', color: '#7b82a8', marginTop: '4px' }}>
-                              {story.description.substring(0, 50)}...
-                            </div>
-                          )}
-                        </td>
-                        <td>
-                          {story.jira_story_key ? (
-                            <span className="da-badge default">{story.jira_story_key}</span>
-                          ) : '-'}
-                        </td>
-                        <td>
-                          {story.repository_details && story.repository_details.length > 0 && story.repository_details[0].external_assignee 
-                            ? story.repository_details[0].external_assignee 
-                            : '-'}
-                        </td>
-                        <td><span className={`da-badge ${(story.status || '').toLowerCase()}`}>{(story.status || '').toUpperCase()}</span></td>
-                        <td>{story.source_branch || story.current_branch || '-'}</td>
-                        <td>
-                          <button 
-                            className="da-btn da-btn-primary" 
-                            style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRunDevaa(story.id);
-                            }}
-                            disabled={(story.status || '').toLowerCase().replace('-', '') !== 'todo'}
+                    {stories
+                      .filter(story => {
+                        const normStatus = (story.status || '').toLowerCase().replace(/[-_ ]/g, '');
+                        if (tableFilter === 'todo' && !(normStatus === 'todo' || normStatus === 'open')) return false;
+                        if (tableFilter === 'devaa' && !isDevaaStory(story)) return false;
+                        if (tableFilter === 'inprogress' && !['inprogress', 'in_progress'].includes(normStatus)) return false;
+                        if (tableFilter === 'done' && normStatus !== 'done') return false;
+
+                        if (searchQuery.trim()) {
+                          const q = searchQuery.toLowerCase().trim();
+                          const details = story.repository_details?.[0] || {};
+                          const matchTitle = (story.title || '').toLowerCase().includes(q);
+                          const matchKey = (story.jira_story_key || '').toLowerCase().includes(q);
+                          const matchAssignee = (details.external_assignee || '').toLowerCase().includes(q);
+                          const matchLabels = (details.labels || '').toLowerCase().includes(q);
+                          if (!matchTitle && !matchKey && !matchAssignee && !matchLabels) return false;
+                        }
+                        return true;
+                      })
+                      .map(story => {
+                        const normStatus = (story.status || '').toLowerCase().replace(/[-_ ]/g, '');
+                        const isTodo = normStatus === 'todo' || normStatus === 'open';
+                        const details = story.repository_details?.[0] || {};
+                        const createdInDevaa = isDevaaStory(story);
+
+                        return (
+                          <tr 
+                            key={story.id}
+                            onClick={() => setSelectedStory(story)}
+                            style={{ cursor: 'pointer' }}
+                            title="Click to view full story details"
                           >
-                            <Play size={14} /> Run
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 600, color: '#1f2937' }}>{story.title}</span>
+                                {createdInDevaa && (
+                                  <span 
+                                    className="da-badge" 
+                                    style={{ 
+                                      background: 'rgba(255, 90, 20, 0.1)', 
+                                      color: 'var(--da-accent)', 
+                                      border: '1px solid var(--da-border-orange)', 
+                                      fontSize: '0.65rem', 
+                                      padding: '1px 6px',
+                                      fontWeight: 700
+                                    }}
+                                    title="Created inside DEVAA"
+                                  >
+                                    DEVAA
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {details.labels && String(details.labels).split(',').map((lbl, i) => (
+                                  <span key={i} className="da-badge default" style={{ fontSize: '0.68rem', padding: '0px 5px' }}>
+                                    #{lbl.trim()}
+                                  </span>
+                                ))}
+                                {story.description && (
+                                  <span style={{ fontSize: '0.78rem', color: '#7b82a8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>
+                                    {story.description.substring(0, 50)}...
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              {story.jira_story_key ? (
+                                <span className="da-badge default" style={{ fontWeight: 700 }}>{story.jira_story_key}</span>
+                              ) : (
+                                <span style={{ color: '#999', fontSize: '0.8rem' }}>Manual</span>
+                              )}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span className="da-badge" style={{ 
+                                  background: (details.priority || 'Medium') === 'Highest' || (details.priority || 'Medium') === 'High' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 90, 20, 0.1)',
+                                  color: (details.priority || 'Medium') === 'Highest' || (details.priority || 'Medium') === 'High' ? 'var(--da-danger)' : 'var(--da-accent)',
+                                  border: '1px solid var(--da-border-orange)',
+                                  fontSize: '0.72rem'
+                                }}>
+                                  {details.priority || 'Medium'}
+                                </span>
+                                {details.story_points && (
+                                  <span style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#475569', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                    {details.story_points} pts
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              {details.external_assignee ? (
+                                <span style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 500 }}>
+                                  {details.external_assignee}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#999', fontSize: '0.8rem' }}>Unassigned</span>
+                              )}
+                            </td>
+                            <td>
+                              {details.due_date ? (
+                                <span style={{ fontSize: '0.8rem', color: '#475569' }}>
+                                  {details.due_date}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#999', fontSize: '0.8rem' }}>-</span>
+                              )}
+                            </td>
+                            <td>
+                              <span className={`da-badge ${(story.status || '').toLowerCase()}`}>
+                                {(story.status || '').toUpperCase()}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', alignItems: 'center' }}>
+                                {isTodo ? (
+                                  <>
+                                    <button 
+                                      className="da-btn da-btn-outline" 
+                                      style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenEditStory(story);
+                                      }}
+                                      title="Edit story details (Title, Priority, Story Points, Due Date, Assignee, etc.)"
+                                    >
+                                      <Edit3 size={13} /> Edit
+                                    </button>
+                                    <button 
+                                      className="da-btn da-btn-primary" 
+                                      style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRunDevaa(story.id);
+                                      }}
+                                      title="Run DEVAA Pipeline"
+                                    >
+                                      <Play size={13} /> Run
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem' }}>
+                                    <Lock size={12} /> View Only
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
+
                 </table>
               </div>
             )}
@@ -1309,6 +1651,230 @@ export default function PODashboard() {
                 <Play size={14} /> Run DEVAA Pipeline
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT STORY MODAL (Only for TO-DO stories) ── */}
+      {editingStory && (
+        <div 
+          className="da-modal-overlay" 
+          onClick={() => setEditingStory(null)}
+          style={{ zIndex: 1100, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+        >
+          <div 
+            className="da-modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--da-surface)',
+              borderRadius: 'var(--da-radius)',
+              maxWidth: '650px',
+              width: '95%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 45px rgba(0,0,0,0.22)',
+              border: '1px solid var(--da-border-orange)',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid var(--da-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'var(--da-surface-2)'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="da-badge default" style={{ fontWeight: 700 }}>
+                    {editingStory.jira_story_key || `Story #${editingStory.id}`}
+                  </span>
+                  <span className="da-badge todo">TO-DO</span>
+                </div>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: '#1f2937', fontWeight: 700 }}>
+                  Edit Story Details
+                </h3>
+              </div>
+              <button 
+                className="da-btn da-btn-ghost" 
+                onClick={() => setEditingStory(null)}
+                style={{ padding: '6px 8px', color: 'var(--da-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Edit Form */}
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="da-form-group">
+                  <label>Story Title *</label>
+                  <input 
+                    type="text"
+                    value={editFormData.title}
+                    onChange={e => setEditFormData({...editFormData, title: e.target.value})}
+                    required
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem' }}>
+                  <div className="da-form-group">
+                    <label>Priority</label>
+                    <select 
+                      value={editFormData.priority}
+                      onChange={e => setEditFormData({...editFormData, priority: e.target.value})}
+                    >
+                      <option value="Highest">Highest</option>
+                      <option value="High">High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                      <option value="Lowest">Lowest</option>
+                    </select>
+                  </div>
+
+                  <div className="da-form-group">
+                    <label>Story Points</label>
+                    <input 
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={editFormData.story_points}
+                      onChange={e => setEditFormData({...editFormData, story_points: e.target.value})}
+                      placeholder="e.g. 1, 2, 3, 5, 8"
+                    />
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
+                      {['1', '2', '3', '5', '8', '13'].map(pts => (
+                        <button
+                          key={pts}
+                          type="button"
+                          onClick={() => setEditFormData({...editFormData, story_points: pts})}
+                          style={{
+                            padding: '2px 8px',
+                            fontSize: '0.72rem',
+                            borderRadius: '4px',
+                            border: String(editFormData.story_points) === pts ? '1px solid var(--da-accent)' : '1px solid var(--da-border)',
+                            background: String(editFormData.story_points) === pts ? 'rgba(255, 90, 20, 0.12)' : '#fff',
+                            color: String(editFormData.story_points) === pts ? 'var(--da-accent)' : '#475569',
+                            cursor: 'pointer',
+                            fontWeight: 600
+                          }}
+                        >
+                          {pts}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="da-form-group">
+                    <label>Due Date</label>
+                    <input 
+                      type="date"
+                      value={editFormData.due_date}
+                      onChange={e => setEditFormData({...editFormData, due_date: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="da-form-group">
+                  <label>Labels / Tags</label>
+                  <input 
+                    type="text"
+                    value={editFormData.labels}
+                    onChange={e => setEditFormData({...editFormData, labels: e.target.value})}
+                    placeholder="e.g. frontend, backend, bug (comma-separated)"
+                  />
+                </div>
+
+                <div className="da-form-group">
+                  <label>Assignee</label>
+                  {jiraUsers && jiraUsers.length > 0 ? (
+                    <select
+                      value={editFormData.assignee_account_id || ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const matched = jiraUsers.find(u => u.accountId === val);
+                        setEditFormData({
+                          ...editFormData,
+                          assignee_account_id: val,
+                          assignee: matched ? (matched.displayName || matched.emailAddress) : val
+                        });
+                      }}
+                    >
+                      <option value="">-- Select Assignee --</option>
+                      {jiraUsers.map(u => (
+                        <option key={u.accountId} value={u.accountId}>
+                          {u.displayName} {u.emailAddress ? `(${u.emailAddress})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input 
+                      type="text"
+                      value={editFormData.assignee}
+                      onChange={e => setEditFormData({...editFormData, assignee: e.target.value})}
+                      placeholder="e.g. name or email address"
+                    />
+                  )}
+                  <span style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px', display: 'block' }}>
+                    {editFormData.assignee ? `Assigned to: ${editFormData.assignee}` : 'Unassigned'}
+                  </span>
+                </div>
+
+
+                <div className="da-form-group">
+                  <label>Description</label>
+                  <textarea 
+                    rows={4}
+                    value={editFormData.description}
+                    onChange={e => setEditFormData({...editFormData, description: e.target.value})}
+                    placeholder="Updated description or requirements..."
+                  />
+                </div>
+
+                <div className="da-form-group">
+                  <label>Acceptance Criteria</label>
+                  <textarea 
+                    rows={3}
+                    value={editFormData.acceptance_criteria}
+                    onChange={e => setEditFormData({...editFormData, acceptance_criteria: e.target.value})}
+                    placeholder="Updated acceptance criteria..."
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: '1rem 1.5rem',
+                borderTop: '1px solid var(--da-border)',
+                background: 'var(--da-surface-2)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem'
+              }}>
+                <button 
+                  type="button"
+                  className="da-btn da-btn-ghost" 
+                  onClick={() => setEditingStory(null)}
+                  disabled={savingEdit}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="da-btn da-btn-primary"
+                  disabled={savingEdit}
+                >
+                  {savingEdit ? (
+                    <><RefreshCw size={14} className="lucide-animated-spin" /> Saving Changes...</>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
