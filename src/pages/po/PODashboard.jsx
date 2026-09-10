@@ -5,6 +5,7 @@ import {
   fetchJiraResources,
   syncTasks,
   triggerRun,
+  triggerRework,
   updateStory
 } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
@@ -12,7 +13,7 @@ import { useDialog } from '../../contexts/DialogContext';
 import { 
   RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText, X, User,
   Paperclip, UploadCloud, File, Trash2, Tag, Calendar, Hash, CheckCircle2,
-  Edit3, Filter, Lock, Search, Sparkles
+  Edit3, Filter, Lock, Search, Sparkles, ExternalLink, AlertTriangle, RotateCcw
 } from 'lucide-react';
 
 
@@ -38,6 +39,18 @@ export default function PODashboard() {
   
   // Tab state: 'dashboard', 'new-story', 'connectors'
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  // Pipeline execution state per story: { [storyId]: { status: 'running' | 'success' | 'failed', stage: string, pr_url: string, error: string } }
+  const [pipelineRuns, setPipelineRuns] = useState({});
+
+  const PIPELINE_STAGES = [
+    'Intake',
+    'Repo Analysis',
+    'Developer',
+    'Validator',
+    'Branch & PR',
+    'Finalizing'
+  ];
   
   // Connectors states
   const [connectorStatus, setConnectorStatus] = useState(null);
@@ -320,16 +333,83 @@ export default function PODashboard() {
     await performSync(false);
   }
 
-  const handleRunDevaa = async (storyId) => {
-    try {
-      const branch = await showPrompt('Enter a branch name (e.g. feature/devaa-update):', 'feature/story-' + storyId);
-      if (!branch) return;
+  const handleRunDevaa = async (storyId, isRework = false) => {
+    // Set initial running state
+    setPipelineRuns(prev => ({
+      ...prev,
+      [storyId]: {
+        status: 'running',
+        stage: 'Intake',
+        isRework,
+        stageIndex: 0
+      }
+    }));
 
-      await triggerRun(storyId, branch);
-      await showAlert('Pipeline triggered! Refreshing status in a moment.');
-      setTimeout(loadData, 2000);
+    // Live stage progression timer while waiting for backend execution
+    let stageIdx = 0;
+    const stageTimer = setInterval(() => {
+      stageIdx++;
+      if (stageIdx < PIPELINE_STAGES.length) {
+        setPipelineRuns(prev => {
+          if (prev[storyId]?.status !== 'running') return prev;
+          return {
+            ...prev,
+            [storyId]: {
+              ...prev[storyId],
+              stage: PIPELINE_STAGES[stageIdx],
+              stageIndex: stageIdx
+            }
+          };
+        });
+      }
+    }, 4500);
+
+    try {
+      const res = isRework ? await triggerRework(storyId) : await triggerRun(storyId);
+      clearInterval(stageTimer);
+
+      if (res && (res.success || res.pr_url || res.status === 'Awaiting QA' || res.status === 'QA-TESTING')) {
+        setPipelineRuns(prev => ({
+          ...prev,
+          [storyId]: {
+            status: 'success',
+            pr_url: res.pr_url,
+            branch_name: res.branch_name,
+            isRework
+          }
+        }));
+        await showAlert(
+          `Pipeline ${isRework ? 'Rework ' : ''}succeeded! PR created: ${res.pr_url || 'PR generated'}`
+        );
+        setTimeout(loadData, 1500);
+      } else {
+        const errMsg = res?.error || 'Pipeline completed with validation errors.';
+        setPipelineRuns(prev => ({
+          ...prev,
+          [storyId]: {
+            status: 'failed',
+            stage: res?.stage || 'Pipeline',
+            error: errMsg,
+            isRework
+          }
+        }));
+        await showAlert(`Pipeline ${isRework ? 'Rework ' : ''}failed: ${errMsg}`);
+        setTimeout(loadData, 2000);
+      }
     } catch (error) {
-      await showAlert('Failed to trigger workflow: ' + (error.response?.data?.error || error.message));
+      clearInterval(stageTimer);
+      const errMsg = error.response?.data?.error || error.message;
+      setPipelineRuns(prev => ({
+        ...prev,
+        [storyId]: {
+          status: 'failed',
+          stage: 'Error',
+          error: errMsg,
+          isRework
+        }
+      }));
+      await showAlert(`Pipeline execution failed: ${errMsg}`);
+      setTimeout(loadData, 2000);
     }
   };
 
@@ -750,7 +830,78 @@ export default function PODashboard() {
                             </td>
                             <td style={{ textAlign: 'right' }}>
                               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', alignItems: 'center' }}>
-                                {isTodo ? (
+                                {pipelineRuns[story.id]?.status === 'running' ? (
+                                  <div 
+                                    style={{ 
+                                      display: 'inline-flex', 
+                                      alignItems: 'center', 
+                                      gap: '6px', 
+                                      background: 'rgba(255, 90, 20, 0.08)', 
+                                      border: '1px solid var(--da-accent)', 
+                                      borderRadius: '6px', 
+                                      padding: '3px 10px',
+                                      fontSize: '0.75rem',
+                                      color: 'var(--da-accent)',
+                                      fontWeight: 600
+                                    }}
+                                    title="Pipeline is executing across DEVAA agents"
+                                  >
+                                    <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                                    <span>{pipelineRuns[story.id].stage || 'Running'}...</span>
+                                  </div>
+                                ) : pipelineRuns[story.id]?.status === 'success' && pipelineRuns[story.id].pr_url ? (
+                                  <a 
+                                    href={pipelineRuns[story.id].pr_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="da-btn"
+                                    style={{ 
+                                      background: 'rgba(16, 185, 129, 0.1)', 
+                                      color: '#059669', 
+                                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                                      padding: '0.25rem 0.65rem', 
+                                      fontSize: '0.75rem', 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: '4px',
+                                      textDecoration: 'none',
+                                      fontWeight: 600
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="Open created Pull Request"
+                                  >
+                                    <CheckCircle2 size={13} color="#059669" /> PR Created <ExternalLink size={11} />
+                                  </a>
+                                ) : pipelineRuns[story.id]?.status === 'failed' ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span 
+                                      className="da-badge"
+                                      style={{ 
+                                        background: 'rgba(239, 68, 68, 0.1)', 
+                                        color: 'var(--da-danger)', 
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        fontSize: '0.72rem',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                      title={pipelineRuns[story.id].error}
+                                    >
+                                      <AlertTriangle size={12} /> Failed ({pipelineRuns[story.id].stage || 'Error'})
+                                    </span>
+                                    <button 
+                                      className="da-btn da-btn-outline" 
+                                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRunDevaa(story.id, Boolean(story.has_rework));
+                                      }}
+                                      title="Retry pipeline"
+                                    >
+                                      Retry
+                                    </button>
+                                  </div>
+                                ) : isTodo ? (
                                   <>
                                     <button 
                                       className="da-btn da-btn-outline" 
@@ -763,17 +914,42 @@ export default function PODashboard() {
                                     >
                                       <Edit3 size={13} /> Edit
                                     </button>
-                                    <button 
-                                      className="da-btn da-btn-primary" 
-                                      style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRunDevaa(story.id);
-                                      }}
-                                      title="Run DEVAA Pipeline"
-                                    >
-                                      <Play size={13} /> Run
-                                    </button>
+                                    {story.has_rework ? (
+                                      <button 
+                                        className="da-btn" 
+                                        style={{ 
+                                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+                                          color: '#FFF', 
+                                          border: 'none',
+                                          padding: '0.25rem 0.65rem', 
+                                          fontSize: '0.78rem', 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          gap: '4px',
+                                          fontWeight: 600,
+                                          boxShadow: '0 2px 4px rgba(217, 119, 6, 0.25)'
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRunDevaa(story.id, true);
+                                        }}
+                                        title="Re-run Rework Pipeline — injects QA rejection feedback into agents"
+                                      >
+                                        <RotateCcw size={13} /> Re-run (Rework)
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        className="da-btn da-btn-primary" 
+                                        style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRunDevaa(story.id, false);
+                                        }}
+                                        title="Run DEVAA Pipeline"
+                                      >
+                                        <Play size={13} /> Run
+                                      </button>
+                                    )}
                                   </>
                                 ) : (
                                   <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem' }}>
@@ -1641,14 +1817,24 @@ export default function PODashboard() {
               </button>
               <button 
                 className="da-btn da-btn-primary"
+                style={selectedStory?.has_rework ? {
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  border: 'none',
+                  boxShadow: '0 2px 4px rgba(217, 119, 6, 0.25)'
+                } : {}}
                 onClick={() => {
                   const id = selectedStory.id;
+                  const hasRework = Boolean(selectedStory.has_rework);
                   setSelectedStory(null);
-                  handleRunDevaa(id);
+                  handleRunDevaa(id, hasRework);
                 }}
-                disabled={(selectedStory.status || '').toLowerCase().replace('-', '') !== 'todo'}
+                disabled={(selectedStory.status || '').toLowerCase().replace('-', '') !== 'todo' || pipelineRuns[selectedStory.id]?.status === 'running'}
               >
-                <Play size={14} /> Run DEVAA Pipeline
+                {selectedStory?.has_rework ? (
+                  <><RotateCcw size={14} /> Re-run (Rework)</>
+                ) : (
+                  <><Play size={14} /> Run DEVAA Pipeline</>
+                )}
               </button>
             </div>
           </div>
