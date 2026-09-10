@@ -39,6 +39,11 @@ export const createStory = async (payload) => {
   const r = await apiClient.post('/api/stories/', payload);
   return r.data;
 };
+export const uploadStoryAttachments = async (storyId, formData) => {
+  const r = await apiClient.post(`/api/stories/${storyId}/attachments`, formData);
+  return r.data;
+};
+
 export const syncTasks = async () => {
   const r = await apiClient.post('/api/stories/sync');
   return r.data;
@@ -117,6 +122,12 @@ export const fetchUsers = async () => {
 // ── Connectors ─────────────────────────────────────────────────────────────────
 export const fetchConnectorStatus = async () => {
   const r = await apiClient.get('/api/connectors/status');
+  return r.data;
+};
+export const fetchJiraResources = async (projectKey = '') => {
+  const r = await apiClient.get('/api/connectors/jira/resources', {
+    params: projectKey ? { project_key: projectKey } : {}
+  });
   return r.data;
 };
 
