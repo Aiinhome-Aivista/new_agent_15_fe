@@ -19,14 +19,14 @@
 
 [data-theme='dark'] {
   /* Dark Theme */
-  --bg-main: #121212;
-  --bg-sidebar: #1E1E1E;
-  --bg-input: #2C2C2C;
-  --border-light: #333333;
-  --text-primary: #F0F0F0;
-  --text-secondary: #A0A0A0;
-  --text-placeholder: #666666;
-  --text-inverse: #121212;
+  --bg-main: #0e121b;
+  --bg-sidebar: #0c0e12;
+  --bg-input: #1b2230;
+  --border-light: #222b3b;
+  --text-primary: #e2e8f0;
+  --text-secondary: #8a95a7;
+  --text-placeholder: #64748b;
+  --text-inverse: #0e121b;
 }
 
 * {

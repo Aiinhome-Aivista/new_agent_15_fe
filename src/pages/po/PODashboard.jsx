@@ -758,7 +758,7 @@ export default function PODashboard() {
                           >
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 600, color: '#1f2937' }}>{story.title}</span>
+                                <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>{story.title}</span>
                                 {createdInDevaa && (
                                   <span 
                                     className="da-badge" 
