@@ -25,7 +25,7 @@ export const AppLayout = () => {
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <div className={styles.logo}>DEVAA.</div>
+          <div className={styles.logo}>DEVAA</div>
         </div>
         
         <nav className={styles.nav}>

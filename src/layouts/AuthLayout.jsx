@@ -10,7 +10,7 @@ export const AuthLayout = () => {
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        <Link to="/" className={styles.logo}>DEVAA.</Link>
+        <Link to="/" className={styles.logo}>DEVAA</Link>
         <Button variant="outline" size="sm" onClick={toggleTheme}>
           {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
         </Button>

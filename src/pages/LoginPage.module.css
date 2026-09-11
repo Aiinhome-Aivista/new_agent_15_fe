@@ -4,6 +4,34 @@
   margin: 0 auto;
 }
 
+.backButton {
+  position: fixed;
+  top: 5.25rem;
+  left: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  background: var(--bg-input, #FFF7F2);
+  border: 1px solid var(--border-light, #D8D8D8);
+  color: var(--text-primary, #333333);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.backButton:hover {
+  background: var(--color-orange-primary, #FF5A14);
+  border-color: var(--color-orange-primary, #FF5A14);
+  color: #FFFFFF;
+  transform: translateX(-3px);
+  box-shadow: 0 4px 12px rgba(255, 90, 20, 0.25);
+}
+
 .loginCard {
   width: 100%;
 }

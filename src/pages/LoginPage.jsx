@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Button } from '../components/ui/Button/Button';
+import { ArrowLeft } from 'lucide-react';
 import styles from './LoginPage.module.css';
 
 const ROLE_HOME = {
@@ -47,6 +48,9 @@ export const LoginPage = () => {
 
   return (
     <div className={styles.container}>
+      <Link to="/" className={styles.backButton}>
+        <ArrowLeft size={16} /> Back to Landing Page
+      </Link>
       <Card className={styles.loginCard}>
         <Card.Header>
           <Card.Title>Sign In to DEVAA</Card.Title>
@@ -88,7 +92,7 @@ export const LoginPage = () => {
       </Card>
 
       <div className={styles.quickLogins}>
-        <h4 className={styles.quickLoginsTitle}>Demo Accounts (Click to auto-fill)</h4>
+        <h4 className={styles.quickLoginsTitle}>⚡ Quick Login (Click to auto fill)</h4>
         <div className={styles.quickLoginsGrid}>
           {[
             { label: '🧑‍💼 Product Owner',    email: 'po@devaa.local',    role: 'Product Owner' },
