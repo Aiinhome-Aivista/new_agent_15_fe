@@ -1827,6 +1827,28 @@ export default function PODashboard() {
                   </div>
                 </div>
               )}
+              {/* QA Approval Notice for DONE stories */}
+              {((selectedStory.status || '').toUpperCase() === 'DONE') && (
+                <div style={{
+                  background: 'rgba(34, 197, 94, 0.06)',
+                  border: '1px solid rgba(34, 197, 94, 0.25)',
+                  borderRadius: '6px',
+                  padding: '0.85rem 1.1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <CheckCircle2 size={20} color="var(--da-success)" />
+                  <div>
+                    <span style={{ fontWeight: 700, color: 'var(--da-success)', fontSize: '0.85rem', display: 'block' }}>
+                      QA Approved & Merged
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#4b5563' }}>
+                      This story was verified against acceptance criteria and approved by QA. PR merged to target branch.
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -1835,12 +1857,23 @@ export default function PODashboard() {
               borderTop: '1px solid var(--da-border)',
               background: 'var(--da-surface-2)',
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               gap: '0.75rem'
             }}>
-              <button className="da-btn da-btn-ghost" onClick={() => setSelectedStory(null)}>
-                Close
+              <button
+                className="da-btn da-btn-outline"
+                style={{ borderColor: 'var(--da-border-orange)', color: 'var(--da-accent)', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                onClick={() => {
+                  setLogsPanelStory(selectedStory);
+                }}
+              >
+                View Pipeline Logs
               </button>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button className="da-btn da-btn-ghost" onClick={() => setSelectedStory(null)}>
+                  Close
+                </button>
               <button 
                 className="da-btn da-btn-primary"
                 style={selectedStory?.has_rework ? {
@@ -1865,6 +1898,7 @@ export default function PODashboard() {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* ── EDIT STORY MODAL (Only for TO-DO stories) ── */}

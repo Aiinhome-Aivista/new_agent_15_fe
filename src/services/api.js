@@ -95,6 +95,10 @@ export const fetchQAQueue = async () => {
   const r = await apiClient.get('/api/qa/queue');
   return r.data;
 };
+export const fetchQAApproved = async () => {
+  const r = await apiClient.get('/api/qa/approved');
+  return r.data;
+};
 export const submitQADecision = async (storyId, decision, comments = '') => {
   const r = await apiClient.post(`/api/qa/${storyId}/decision`, { decision, comments });
   return r.data;
