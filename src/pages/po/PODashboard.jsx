@@ -8,6 +8,7 @@ import {
   triggerRework,
   updateStory
 } from '../../services/api';
+import PipelineLogsPanel from '../../components/PipelineLogsPanel';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -42,6 +43,9 @@ export default function PODashboard() {
   
   // Pipeline execution state per story: { [storyId]: { status: 'running' | 'success' | 'failed', stage: string, pr_url: string, error: string } }
   const [pipelineRuns, setPipelineRuns] = useState({});
+
+  // Logs panel: which story's logs to show (null = closed)
+  const [logsPanelStory, setLogsPanelStory] = useState(null);
 
   const PIPELINE_STAGES = [
     'Intake',
@@ -334,6 +338,10 @@ export default function PODashboard() {
   }
 
   const handleRunDevaa = async (storyId, isRework = false) => {
+    // Open logs panel automatically so user can watch live
+    const runningStory = stories.find(s => s.id === storyId);
+    if (runningStory) setLogsPanelStory(runningStory);
+
     // Set initial running state
     setPipelineRuns(prev => ({
       ...prev,
@@ -956,8 +964,26 @@ export default function PODashboard() {
                                     <Lock size={12} /> View Only
                                   </span>
                                 )}
-                              </div>
-                            </td>
+                              {/* Logs button — always visible */}
+                              <button
+                                className="da-btn da-btn-outline"
+                                style={{
+                                  padding: '0.25rem 0.65rem', fontSize: '0.75rem',
+                                  display: 'flex', alignItems: 'center', gap: '4px',
+                                  background: logsPanelStory?.id === story.id ? 'rgba(99,102,241,0.15)' : '',
+                                  borderColor: logsPanelStory?.id === story.id ? '#6366f1' : '',
+                                  color: logsPanelStory?.id === story.id ? '#818cf8' : '',
+                                }}
+                                onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                title="View pipeline activity log"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                </svg>
+                                Logs
+                              </button>
+                            </div>
+                          </td>
                           </tr>
                         );
                       })}
@@ -2063,6 +2089,14 @@ export default function PODashboard() {
             </form>
           </div>
         </div>
+      )}
+      {/* ── PIPELINE LOGS PANEL ── */}
+      {logsPanelStory && (
+        <PipelineLogsPanel
+          storyId={logsPanelStory.id}
+          storyTitle={logsPanelStory.title}
+          onClose={() => setLogsPanelStory(null)}
+        />
       )}
     </DashboardLayout>
   );

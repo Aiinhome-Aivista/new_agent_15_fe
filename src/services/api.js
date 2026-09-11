@@ -99,6 +99,12 @@ export const submitQADecision = async (storyId, decision, comments = '') => {
   const r = await apiClient.post(`/api/qa/${storyId}/decision`, { decision, comments });
   return r.data;
 };
+export const fetchPipelineLogs = async (storyId, sinceId = 0) => {
+  const r = await apiClient.get(`/api/stories/${storyId}/pipeline-logs`, {
+    params: { since: sinceId }
+  });
+  return r.data;
+};
 export const triggerRework = async (storyId) => {
   const r = await apiClient.post(`/api/qa/${storyId}/rework`);
   return r.data;
