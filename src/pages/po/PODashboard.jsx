@@ -3,6 +3,7 @@ import {
   fetchStories, 
   fetchConnectorStatus,
   fetchJiraResources,
+  testGithubConnection,
   syncTasks,
   triggerRun,
   triggerRework,
@@ -14,11 +15,17 @@ import { useDialog } from '../../contexts/DialogContext';
 import { 
   RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText, X, User,
   Paperclip, UploadCloud, File, Trash2, Tag, Calendar, Hash, CheckCircle2,
-  Edit3, Filter, Lock, Search, Sparkles, ExternalLink, AlertTriangle, RotateCcw
+  Edit3, Filter, Lock, Search, Sparkles, ExternalLink, AlertTriangle, RotateCcw,
+  GitBranch, GitPullRequest
 } from 'lucide-react';
 
-
 import '../../styles/dashboard.css';
+
+const GithubIcon = ({ size = 24, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+  </svg>
+);
 
 // Read sync interval from .env (defaults to 10 minutes)
 const getSyncIntervalMs = () => {
@@ -56,11 +63,11 @@ export default function PODashboard() {
     'Finalizing'
   ];
   
-  // Connectors states
   const [connectorStatus, setConnectorStatus] = useState(null);
   const [connectorLoading, setConnectorLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState(null);
+  const [testingGithub, setTestingGithub] = useState(false);
   const syncIntervalMs = getSyncIntervalMs();
   const getTodayDateStr = () => new Date().toISOString().split('T')[0];
 
@@ -335,6 +342,24 @@ export default function PODashboard() {
 
   async function handleManualSync() {
     await performSync(false);
+  }
+
+  async function handleTestGithub() {
+    setTestingGithub(true);
+    try {
+      const res = await testGithubConnection();
+      if (res?.connected) {
+        const repoName = res.repo?.full_name || (res.org && res.repo_name ? `${res.org}/${res.repo_name}` : null) || res.repo_url || 'Configured Repository';
+        await showAlert(`✅ GitHub connection verified!\n\n• Repository: ${repoName}\n• Default Branch: ${res.default_branch || 'main'}\n• Token Status: Active & Valid`);
+      } else {
+        await showAlert('⚠️ GitHub connection issue: ' + (res?.error || 'Token not configured'));
+      }
+    } catch (e) {
+      console.error('GitHub test failed:', e);
+      await showAlert('❌ GitHub connection failed: ' + (e.response?.data?.error || e.message));
+    } finally {
+      setTestingGithub(false);
+    }
   }
 
   const handleRunDevaa = async (storyId, isRework = false) => {
@@ -1588,6 +1613,93 @@ export default function PODashboard() {
                 <div className="da-empty-icon"><Plug size={48} /></div>
                 <h3>No Connectors Configured</h3>
                 <p>To pull stories automatically from Jira or Linear, update your `.env` file with the provider credentials.</p>
+              </div>
+            )}
+
+            {/* ── GITHUB CONNECTOR CARD ── */}
+            {!connectorLoading && (
+              <div className="da-connector-card" style={{ marginTop: '1.5rem' }}>
+                <div className="da-connector-header">
+                  <div className="da-connector-icon" style={{ color: '#f97316' }}>
+                    <GithubIcon size={26} />
+                  </div>
+                  <div className="da-connector-info">
+                    <h3>GITHUB</h3>
+                    <p>Source Code Repository & Pull Request Integration</p>
+                  </div>
+                  <div 
+                    className={`da-connector-status-badge ${connectorStatus?.github?.connected ? 'active' : ''}`}
+                    style={{ color: connectorStatus?.github?.connected ? 'var(--da-success, #22c55e)' : '#eab308' }}
+                  >
+                    {connectorStatus?.github?.connected ? '● Active' : '○ Not Configured'}
+                  </div>
+                </div>
+
+                <div className="da-connector-details">
+                  <div className="da-detail-row">
+                    <span>Organization:</span>
+                    <strong>{connectorStatus?.github?.org || 'N/A'}</strong>
+                  </div>
+                  <div className="da-detail-row">
+                    <span>Target Repo:</span>
+                    <strong>{connectorStatus?.github?.full_repo_path || connectorStatus?.github?.repo_name || 'N/A'}</strong>
+                  </div>
+                  {connectorStatus?.github?.base_url && (
+                    <div className="da-detail-row">
+                      <span>Repository URL:</span>
+                      <strong>
+                        <a 
+                          href={connectorStatus.github.base_url.replace(/\.git$/, '')}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--da-accent, #f97316)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          {connectorStatus.github.base_url} <ExternalLink size={13} />
+                        </a>
+                      </strong>
+                    </div>
+                  )}
+                  <div className="da-detail-row">
+                    <span>Default Branch:</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <GitBranch size={15} style={{ color: 'var(--da-accent, #f97316)' }} />
+                      <code>{connectorStatus?.github?.default_branch || 'main'}</code>
+                    </span>
+                  </div>
+                  <div className="da-detail-row">
+                    <span>Access Token:</span>
+                    <code>{connectorStatus?.github?.masked_token || 'Not Set'}</code>
+                  </div>
+              
+                </div>
+
+                <div className="da-connector-actions" style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  <button 
+                    className="da-btn da-btn-secondary" 
+                    onClick={handleTestGithub}
+                    disabled={testingGithub}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <RefreshCw size={15} className={testingGithub ? 'lucide-animated-spin' : ''} />
+                    {testingGithub ? 'Testing Connection...' : 'Test GitHub Connection'}
+                  </button>
+
+                  {connectorStatus?.github?.base_url && (
+                    <a 
+                      href={connectorStatus.github.base_url.replace(/\.git$/, '')}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="da-btn da-btn-outline"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none', border: '1px solid var(--da-border-orange)' }}
+                    >
+                      <ExternalLink size={15} /> Open GitHub Repo
+                    </a>
+                  )}
+
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                    Configured in <code>backend/.env</code> (<code>GITHUB_TOKEN</code>, <code>GITHUB_BASE_URL</code>, <code>GITHUB_ORG</code>)
+                  </span>
+                </div>
               </div>
             )}
           </div>

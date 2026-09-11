@@ -151,5 +151,9 @@ export const fetchJiraResources = async (projectKey = '') => {
   });
   return r.data;
 };
+export const testGithubConnection = async () => {
+  const r = await apiClient.post('/api/connectors/github/test');
+  return r.data;
+};
 
 export default apiClient;
