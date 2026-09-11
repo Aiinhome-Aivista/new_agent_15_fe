@@ -203,8 +203,8 @@ export default function PipelineLogsPanel({ storyId, storyTitle, onClose }) {
           }}
         >
           {error && (
-            <div style={{ padding: '12px 18px', color: '#ef4444', fontSize: '0.78rem' }}>
-              ⚠ {error}
+            <div style={{ padding: '12px 18px', color: '#ef4444', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <AlertTriangle size={14} color="#ef4444" /> {error}
             </div>
           )}
 

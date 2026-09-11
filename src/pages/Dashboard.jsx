@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
+import { ClipboardList } from 'lucide-react';
 import { fetchWorkflows } from '../services/api';
 
 export const Dashboard = () => {
@@ -52,8 +53,8 @@ export const Dashboard = () => {
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '2rem 0', color: '#ef4444' }}>{error}</div>
           ) : workflows.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-placeholder)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📋</div>
+            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-placeholder)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <ClipboardList size={40} color="var(--color-orange-primary)" style={{ marginBottom: '1rem' }} />
               <p>No active workflows found.</p>
               <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Create a new workflow to start the agent planning process.</p>
             </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Card } from '../components/ui/Card/Card';
+import { Bot, ShieldCheck, Cpu } from 'lucide-react';
 import styles from './LandingPage.module.css';
 
 export const LandingPage = () => {
@@ -27,7 +28,9 @@ export const LandingPage = () => {
       <section id="features" className={styles.features}>
         <Card>
           <Card.Content>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-orange-primary)' }}>🤖 Multi-Agent Workflow</h3>
+            <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-orange-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Bot size={20} /> Multi-Agent Workflow
+            </h3>
             <p style={{ color: 'var(--text-secondary)' }}>
               Dedicated agents for Requirements, Architecture, Development, and QA working in perfect unison.
             </p>
@@ -36,7 +39,9 @@ export const LandingPage = () => {
         
         <Card>
           <Card.Content>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-orange-primary)' }}>🔐 Role-Based Context</h3>
+            <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-orange-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ShieldCheck size={20} /> Role-Based Context
+            </h3>
             <p style={{ color: 'var(--text-secondary)' }}>
               Persona-driven interfaces tailor the experience for Product Owners, Engineering Leads, and QA Reviewers.
             </p>
@@ -45,7 +50,9 @@ export const LandingPage = () => {
         
         <Card>
           <Card.Content>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-orange-primary)' }}>🔌 Dynamic LLM Routing</h3>
+            <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-orange-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Cpu size={20} /> Dynamic LLM Routing
+            </h3>
             <p style={{ color: 'var(--text-secondary)' }}>
               Seamlessly switch between Google Gemini, OpenAI, and Local LLMs depending on the task complexity and cost.
             </p>

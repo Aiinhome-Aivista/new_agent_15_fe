@@ -304,7 +304,7 @@ export default function QADashboard() {
               <div className="da-section" style={{ position: 'sticky', top: '1.5rem', alignSelf: 'start' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div className="da-section-title">Review Story</div>
-                  <button className="da-btn da-btn-ghost" onClick={() => setSelected(null)}>✕</button>
+                  <button className="da-btn da-btn-ghost" onClick={() => setSelected(null)}><X size={16} /></button>
                 </div>
                 
                 <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem' }}>{selected.title}</h3>

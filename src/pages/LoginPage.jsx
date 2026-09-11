@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Button } from '../components/ui/Button/Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Briefcase, Code2, CheckCircle2, Shield, Zap } from 'lucide-react';
 import styles from './LoginPage.module.css';
 
 const ROLE_HOME = {
@@ -92,13 +92,15 @@ export const LoginPage = () => {
       </Card>
 
       <div className={styles.quickLogins}>
-        <h4 className={styles.quickLoginsTitle}>⚡ Quick Login (Click to auto fill)</h4>
+        <h4 className={styles.quickLoginsTitle} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+          <Zap size={16} color="var(--color-orange-primary)" /> Quick Login (Click to auto fill)
+        </h4>
         <div className={styles.quickLoginsGrid}>
           {[
-            { label: '🧑‍💼 Product Owner',    email: 'po@devaa.local',    role: 'Product Owner' },
-            { label: '👨‍💻 Engineering Lead', email: 'lead@devaa.local',  role: 'Engineering Lead' },
-            { label: '🔍 QA Reviewer',        email: 'qa@devaa.local',    role: 'QA Reviewer' },
-            { label: '⚙️ Admin',              email: 'admin@devaa.local', role: 'Admin' },
+            { label: 'Product Owner',    icon: <Briefcase size={15} />,    email: 'po@devaa.local',    role: 'Product Owner' },
+            { label: 'Engineering Lead', icon: <Code2 size={15} />,        email: 'lead@devaa.local',  role: 'Engineering Lead' },
+            { label: 'QA Reviewer',      icon: <CheckCircle2 size={15} />, email: 'qa@devaa.local',    role: 'QA Reviewer' },
+            { label: 'Admin',            icon: <Shield size={15} />,       email: 'admin@devaa.local', role: 'Admin' },
           ].map(p => (
             <Button
               key={p.role}
@@ -119,8 +121,10 @@ export const LoginPage = () => {
                   setIsSubmitting(false);
                 }
               }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
             >
-              {p.label}
+              {p.icon}
+              <span>{p.label}</span>
             </Button>
           ))}
         </div>

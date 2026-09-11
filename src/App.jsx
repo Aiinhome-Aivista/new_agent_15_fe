@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DialogProvider } from './contexts/DialogContext';
+import { ShieldAlert } from 'lucide-react';
 
 // Layouts
 import { AppLayout } from './layouts/AppLayout';
@@ -110,8 +111,8 @@ function App() {
 
             {/* ── Misc ── */}
             <Route path="/unauthorized" element={
-              <div style={{ padding: '4rem', textAlign: 'center', color: '#e8eaf6', background: '#0d0f1a', minHeight: '100vh' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
+              <div style={{ padding: '4rem', textAlign: 'center', color: '#e8eaf6', background: '#0d0f1a', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldAlert size={48} color="#ef4444" style={{ marginBottom: '1rem' }} />
                 <h1>Access Denied</h1>
                 <p style={{ color: '#7b82a8' }}>You don't have permission to view this page.</p>
               </div>

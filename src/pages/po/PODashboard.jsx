@@ -1070,7 +1070,7 @@ export default function PODashboard() {
                           {p.key} — {p.name}
                         </option>
                       ))}
-                      <option value="__manual__">✏️ Enter Custom Project Key...</option>
+                      <option value="__manual__">Enter Custom Project Key...</option>
                     </select>
                   ) : (
                     <input 
@@ -1166,13 +1166,13 @@ export default function PODashboard() {
                     value={formData.sprint_id}
                     onChange={e => setFormData({...formData, sprint_id: e.target.value})}
                   >
-                    <option value="active">⚡ Current Active Sprint (e.g. SCRUM Sprint 0) [Recommended]</option>
+                    <option value="active">Current Active Sprint (e.g. SCRUM Sprint 0) [Recommended]</option>
                     {jiraSprints.length > 0 && jiraSprints.map(s => (
                       <option key={s.id} value={s.id}>
                         {s.name} {s.state === 'active' ? '● (Active Board)' : '(Future)'}
                       </option>
                     ))}
-                    <option value="backlog">📦 Backlog (Do not add to sprint)</option>
+                    <option value="backlog">Backlog (Do not add to sprint)</option>
                   </select>
                   <span style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px', display: 'block' }}>
                     Active Sprint items immediately show on your Jira <strong>Board</strong>.
@@ -1292,7 +1292,7 @@ export default function PODashboard() {
                         ))}
                       </optgroup>
                     )}
-                    <option value="__manual__">✏️ Enter Custom Name / Email manually...</option>
+                    <option value="__manual__">Enter Custom Name / Email manually...</option>
                   </select>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
