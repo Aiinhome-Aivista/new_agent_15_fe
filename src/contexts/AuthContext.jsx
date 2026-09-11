@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { clearAllStorage } from '../utils/storage';
 
 const AuthContext = createContext();
 
@@ -21,7 +22,7 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data.user);
         } catch (error) {
           console.error('Failed to validate session:', error);
-          localStorage.removeItem('token');
+          clearAllStorage();
           setUser(null);
         }
       }
@@ -34,6 +35,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await axios.post('/api/auth/login', { email, password });
+      clearAllStorage();
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
       return { success: true, user: response.data.user };
@@ -47,17 +49,20 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout');
+      const token = localStorage.getItem('token');
+      await axios.post('/api/auth/logout', {}, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
     } catch (e) {
       // Ignore errors on logout
     } finally {
-      localStorage.removeItem('token');
+      clearAllStorage();
       setUser(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, clearAllStorage }}>
       {children}
     </AuthContext.Provider>
   );
