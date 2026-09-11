@@ -46,6 +46,12 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100vh;
+  z-index: 100;
 }
 
 .da-sidebar-header {
@@ -64,6 +70,7 @@
   flex-direction: column;
   padding: 0;
   flex: 1;
+  overflow-y: auto;
 }
 
 .da-sidebar-item {
@@ -106,6 +113,7 @@
 /* ── Main Content Area ───────────────────────────────────────── */
 .da-main-wrapper {
   flex: 1;
+  margin-left: 260px;
   display: flex;
   flex-direction: column;
   background: var(--da-bg);
