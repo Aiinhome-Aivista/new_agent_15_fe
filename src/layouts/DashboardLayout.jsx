@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Check, LogOut, User } from 'lucide-react';
+import { Bot, LogOut, User } from 'lucide-react';
 import '../styles/dashboard.css';
 
 export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabChange, children }) {
@@ -12,8 +12,10 @@ export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabCha
         {/* Sidebar */}
         <div className="da-sidebar">
           <div className="da-sidebar-header">
-            <span className="da-logo" style={{ color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ background: 'var(--da-accent)', color: '#FFF', borderRadius: '4px', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={16} strokeWidth={3} /></div>
+            <span className="da-logo" style={{ color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ background: 'var(--da-accent)', color: '#FFF', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bot size={18} strokeWidth={2.5} />
+              </div>
               DEVAA
             </span>
           </div>
@@ -30,7 +32,7 @@ export function DashboardLayout({ title, personaClass, tabs, activeTab, onTabCha
           </div>
           <div className="da-sidebar-footer">
             <button className="da-sidebar-logout" onClick={logout}>
-              <LogOut size={16} style={{ marginRight: '0.5rem' }} /> Logout
+              <LogOut size={16} style={{ marginRight: '0.75rem' }} /> Logout
             </button>
           </div>
         </div>
