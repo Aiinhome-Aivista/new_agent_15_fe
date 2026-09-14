@@ -125,7 +125,7 @@ export default function LeadDashboard() {
 
                     <div className="da-form-group">
                       <label>Description</label>
-                      <div style={{ background: 'var(--da-bg-base)', padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem', color: '#e8eaf6', whiteSpace: 'pre-wrap' }}>
+                      <div style={{ background: 'var(--da-surface-2, #FFF7F2)', padding: '0.85rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-border)', fontSize: '0.85rem', color: 'var(--da-text)', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
                         {selectedPR.pr_body || 'No description provided.'}
                       </div>
                     </div>

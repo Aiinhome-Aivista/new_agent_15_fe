@@ -11,6 +11,75 @@ import {
 } from 'lucide-react';
 import '../../styles/dashboard.css';
 
+function renderAcceptanceCriteria(acText) {
+  if (!acText || !acText.trim()) {
+    return <span style={{ color: 'var(--da-muted)', fontStyle: 'italic' }}>No acceptance criteria provided.</span>;
+  }
+
+  const hasAcItems = /(?:AC\d+|Technical Constraints)/i.test(acText);
+  if (hasAcItems) {
+    const parts = acText.split(/(?=\b(?:AC\d+|Technical Constraints)\b)/i).filter(p => p.trim());
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        {parts.map((part, idx) => {
+          const trimmed = part.trim();
+          const match = trimmed.match(/^((?:AC\d+|Technical Constraints)[^—\-:\n]*[—\-:]?)\s*(.*)/is);
+          if (match) {
+            const label = match[1].trim();
+            const body = match[2].trim();
+            const isConstraint = /technical constraints/i.test(label);
+            return (
+              <div 
+                key={idx} 
+                style={{ 
+                  background: isConstraint ? 'rgba(239, 68, 68, 0.06)' : 'var(--da-bg, #ffffff)', 
+                  border: isConstraint ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--da-border, #e2e8f0)', 
+                  borderRadius: '6px', 
+                  padding: '0.65rem 0.85rem',
+                  fontSize: '0.82rem',
+                  lineHeight: 1.55,
+                  color: 'var(--da-text, #1e293b)'
+                }}
+              >
+                <div style={{ 
+                  fontWeight: 700, 
+                  color: isConstraint ? 'var(--da-danger, #ef4444)' : 'var(--da-accent, #FF5A14)',
+                  marginBottom: body ? '0.35rem' : 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span style={{ 
+                    background: isConstraint ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255, 90, 20, 0.12)', 
+                    padding: '2px 8px', 
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700 
+                  }}>
+                    {label}
+                  </span>
+                </div>
+                {body && <div style={{ whiteSpace: 'pre-wrap', color: 'var(--da-text, #334155)' }}>{body}</div>}
+              </div>
+            );
+          }
+          return (
+            <div key={idx} style={{ whiteSpace: 'pre-wrap', color: 'var(--da-text, #334155)', fontSize: '0.82rem' }}>
+              {trimmed}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ whiteSpace: 'pre-wrap', color: 'var(--da-text, #334155)', fontSize: '0.84rem', lineHeight: 1.6 }}>
+      {acText}
+    </div>
+  );
+}
+
 export default function QADashboard() {
   const { user } = useAuth();
   const { showConfirm } = useDialog();
@@ -310,16 +379,25 @@ export default function QADashboard() {
                 <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem' }}>{selected.title}</h3>
                 
                 <div className="da-form-group">
-                  <label>Acceptance Criteria</label>
-                  <div style={{ background: 'var(--da-bg-base)', padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem', color: '#e8eaf6', whiteSpace: 'pre-wrap' }}>
-                    {selected.acceptance_criteria || 'No acceptance criteria provided.'}
+                  <label style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--da-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'block' }}>
+                    Acceptance Criteria
+                  </label>
+                  <div style={{ 
+                    background: 'var(--da-surface-2, #FFF7F2)', 
+                    padding: '0.85rem', 
+                    borderRadius: 'var(--da-radius-sm)', 
+                    border: '1px solid var(--da-border)',
+                    maxHeight: '380px', 
+                    overflowY: 'auto' 
+                  }}>
+                    {renderAcceptanceCriteria(selected.acceptance_criteria)}
                   </div>
                 </div>
 
                 {selected.pr ? (
                   <div className="da-alert info" style={{ marginBottom: '1.5rem' }}>
                     <strong>PR is ready for review:</strong><br />
-                    <a href={selected.pr.pr_url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <a href={selected.pr.pr_url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-accent, #FF5A14)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
                       {selected.pr.pr_url} <ExternalLink size={12} />
                     </a>
                   </div>
@@ -330,16 +408,16 @@ export default function QADashboard() {
                 )}
 
                 {rejectModal ? (
-                  <div style={{ background: 'var(--da-bg-base)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--da-border)' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--da-muted)', marginBottom: '0.5rem', display: 'block' }}>
+                  <div style={{ background: 'var(--da-surface-2)', padding: '1rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-border)' }}>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--da-muted)', marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>
                       Reason for rejection (sent back to AI agent):
                     </label>
                     <textarea 
                       value={rejectComment} 
                       onChange={e => setRejectComment(e.target.value)} 
                       rows={4} 
-                      style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: '#fff', padding: '0.5rem' }} 
-                      placeholder="e.g., The login button is missing on mobile..."
+                      style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: 'var(--da-text)', padding: '0.5rem', borderRadius: '4px' }} 
+                      placeholder="e.g., The search query is returning wrong results..."
                     />
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                       <button className="da-btn da-btn-ghost" onClick={() => setRejectModal(false)} disabled={submitting}>Cancel</button>
@@ -811,12 +889,10 @@ export default function QADashboard() {
                       padding: '1rem',
                       borderRadius: 'var(--da-radius-sm)',
                       border: '1px solid var(--da-border)',
-                      fontSize: '0.88rem',
-                      lineHeight: 1.6,
-                      color: '#2d3748',
-                      whiteSpace: 'pre-wrap'
+                      maxHeight: '340px',
+                      overflowY: 'auto'
                     }}>
-                      {selectedApproved.story.acceptance_criteria}
+                      {renderAcceptanceCriteria(selectedApproved.story.acceptance_criteria)}
                     </div>
                   </div>
                 )}
