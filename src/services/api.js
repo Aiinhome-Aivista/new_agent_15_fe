@@ -55,8 +55,8 @@ export const uploadStoryAttachments = async (storyId, formData) => {
   return r.data;
 };
 
-export const syncTasks = async () => {
-  const r = await apiClient.post('/api/stories/sync');
+export const syncTasks = async (projectKey) => {
+  const r = await apiClient.post('/api/stories/sync', projectKey ? { project_key: projectKey } : {});
   return r.data;
 };
 export const updateStory = async (id, payload) => {

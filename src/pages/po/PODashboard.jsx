@@ -321,7 +321,8 @@ export default function PODashboard() {
     if (syncing) return;
     setSyncing(true);
     try {
-      await syncTasks();
+      const projKey = formData.project_key || connectorStatus?.project || undefined;
+      await syncTasks(projKey);
       setLastSynced(new Date());
       if (!silent) {
         await showAlert('Sync completed successfully!');
