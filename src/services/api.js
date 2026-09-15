@@ -71,6 +71,10 @@ export const fetchStoryStatus = async (id) => {
   const r = await apiClient.get(`/api/stories/${id}/status`);
   return r.data;
 };
+export const deleteStory = async (id) => {
+  const r = await apiClient.delete(`/api/stories/${id}`);
+  return r.data;
+};
 
 // ── Pull Requests ─────────────────────────────────────────────────────────────
 export const fetchPullRequests = async () => {

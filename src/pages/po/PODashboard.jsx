@@ -7,7 +7,8 @@ import {
   syncTasks,
   triggerRun,
   triggerRework,
-  updateStory
+  updateStory,
+  deleteStory
 } from '../../services/api';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
@@ -53,6 +54,27 @@ export default function PODashboard() {
 
   // Logs panel: which story's logs to show (null = closed)
   const [logsPanelStory, setLogsPanelStory] = useState(null);
+
+  // Delete confirmation modal state
+  const [storyToDelete, setStoryToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteStory = async () => {
+    if (!storyToDelete) return;
+    try {
+      setIsDeleting(true);
+      const res = await deleteStory(storyToDelete.id);
+      showAlert(res.message || 'Story deleted successfully');
+      setStoryToDelete(null);
+      await loadData();
+    } catch (error) {
+      console.error('Failed to delete story:', error);
+      const errMsg = error.response?.data?.error || error.message || 'Failed to delete story';
+      showAlert(errMsg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const PIPELINE_STAGES = [
     'Intake',
@@ -990,7 +1012,8 @@ export default function PODashboard() {
                                     <Lock size={12} /> View Only
                                   </span>
                                 )}
-                              {/* Logs button — always visible */}
+                              {/* Logs button — commented out */}
+                              {/* 
                               <button
                                 className="da-btn da-btn-outline"
                                 style={{
@@ -1007,6 +1030,22 @@ export default function PODashboard() {
                                   <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
                                 </svg>
                                 Logs
+                              </button>
+                              */}
+                              {/* Delete button */}
+                              <button
+                                className="da-btn da-btn-outline"
+                                style={{
+                                  padding: '0.25rem 0.65rem', fontSize: '0.75rem',
+                                  display: 'flex', alignItems: 'center', gap: '4px',
+                                  borderColor: '#ef4444',
+                                  color: '#f87171',
+                                  background: 'rgba(239, 68, 68, 0.08)',
+                                }}
+                                onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
+                                title="Delete story from app and Jira"
+                              >
+                                <Trash2 size={13} /> Delete
                               </button>
                             </div>
                           </td>
@@ -2237,6 +2276,83 @@ export default function PODashboard() {
           </div>
         </div>
       )}
+      {/* ── DELETE CONFIRMATION MODAL ── */}
+      {storyToDelete && (
+        <div className="da-modal-overlay" onClick={() => !isDeleting && setStoryToDelete(null)}>
+          <div className="da-modal" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+            <div className="da-modal-header" style={{ borderBottom: '1px solid var(--da-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
+                <AlertTriangle size={20} />
+                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Delete Story & Jira Issue</span>
+              </div>
+              <button 
+                className="da-modal-close" 
+                disabled={isDeleting}
+                onClick={() => setStoryToDelete(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="da-modal-body" style={{ padding: '1.25rem 1.5rem' }}>
+              <p style={{ margin: '0 0 1rem 0', color: 'var(--da-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                Are you sure you want to delete <strong style={{ color: '#ef4444' }}>"{storyToDelete.title}"</strong>?
+              </p>
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '8px',
+                padding: '0.85rem 1rem',
+                fontSize: '0.85rem',
+                color: '#f87171',
+                lineHeight: '1.4'
+              }}>
+                ⚠️ <strong>Action Details:</strong>
+                <ul style={{ margin: '0.4rem 0 0 1.2rem', padding: 0 }}>
+                  <li>Delete story item from <strong>DEVAA App</strong>.</li>
+                  <li>Delete issue <strong>{storyToDelete.jira_story_key || storyToDelete.external_task_id || 'linked'}</strong> from <strong>Jira</strong>.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="da-modal-footer" style={{ borderTop: '1px solid var(--da-border)', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button 
+                className="da-btn da-btn-ghost" 
+                disabled={isDeleting}
+                onClick={() => setStoryToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="da-btn" 
+                style={{
+                  background: '#ef4444',
+                  color: '#ffffff',
+                  border: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  opacity: isDeleting ? 0.7 : 1,
+                  cursor: isDeleting ? 'not-allowed' : 'pointer'
+                }}
+                disabled={isDeleting}
+                onClick={handleDeleteStory}
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw size={14} className="lucide-animated-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} /> Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── PIPELINE LOGS PANEL ── */}
       {logsPanelStory && (
         <PipelineLogsPanel
