@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchQAQueue, fetchQAApproved, submitQADecision } from '../../services/api';
+import { fetchQAQueue, fetchQAApproved, submitQADecision, downloadStoryEvidenceBlob } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
+import EvidenceModal from '../../components/EvidenceModal';
+import PRConversationSection from '../../components/PRConversationSection';
 import { 
   Search, RefreshCw, CheckCircle, CheckCircle2, AlertTriangle, 
   XCircle, Check, X, ExternalLink, Calendar, GitPullRequest, 
-  GitBranch, Eye, Terminal, FileText, UserCheck, MessageSquare 
+  GitBranch, Eye, Terminal, FileText, UserCheck, MessageSquare, Download 
 } from 'lucide-react';
+
 import '../../styles/dashboard.css';
 
 function renderAcceptanceCriteria(acText) {
@@ -107,6 +110,35 @@ export default function QADashboard() {
 
   // Pipeline logs modal state
   const [logsPanelStory, setLogsPanelStory] = useState(null);
+
+  // Evidence modal state
+  const [evidenceModalStory, setEvidenceModalStory] = useState(null);
+  const [downloadingEvidencePdf, setDownloadingEvidencePdf] = useState(false);
+
+  const handleQuickDownloadPdf = async (e, story) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!story) return;
+    try {
+      setDownloadingEvidencePdf(true);
+      const response = await downloadStoryEvidenceBlob(story.id, 'pdf');
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const key = story.jira_story_key || story.external_task_id || `story_${story.id}`;
+      a.download = `evidence_${key}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Quick PDF download failed:', err);
+      showAlert(`Failed to download PDF: ${err.response?.data?.error || err.message || 'Error'}`);
+    } finally {
+      setDownloadingEvidencePdf(false);
+    }
+  };
+
 
   useEffect(() => {
     loadQueue();
@@ -395,17 +427,52 @@ export default function QADashboard() {
                 </div>
 
                 {selected.pr ? (
-                  <div className="da-alert info" style={{ marginBottom: '1.5rem' }}>
-                    <strong>PR is ready for review:</strong><br />
-                    <a href={selected.pr.pr_url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-accent, #FF5A14)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                      {selected.pr.pr_url} <ExternalLink size={12} />
-                    </a>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div className="da-alert info" style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <strong>PR is ready for review:</strong><br />
+                        <a href={selected.pr.pr_url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-accent, #FF5A14)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+                          {selected.pr.pr_url} <ExternalLink size={12} />
+                        </a>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="da-btn da-btn-outline"
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', color: '#FF5A14', borderColor: 'rgba(255,90,20,0.4)', background: 'rgba(255,90,20,0.06)' }}
+                          onClick={() => setEvidenceModalStory(selected)}
+                          title="View complete evidence dossier"
+                        >
+                          <FileText size={13} /> View Evidence
+                        </button>
+                        <button
+                          type="button"
+                          className="da-btn da-btn-outline"
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', background: 'rgba(56,189,248,0.06)' }}
+                          onClick={(e) => handleQuickDownloadPdf(e, selected)}
+                          disabled={downloadingEvidencePdf}
+                          title="Download Evidence PDF"
+                        >
+                          {downloadingEvidencePdf ? <RefreshCw size={12} className="animate-spin" /> : <Download size={12} />}
+                          PDF
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* GitHub PR Conversation Timeline */}
+                    <PRConversationSection
+                      prId={selected.pr.id}
+                      prNumber={selected.pr.pr_number}
+                      prUrl={selected.pr.pr_url}
+                      cachedSummary={selected.pr.pr_summary}
+                    />
                   </div>
                 ) : (
                   <div className="da-alert warning" style={{ marginBottom: '1.5rem' }}>
                     <strong>No active PR found.</strong> Developer agent might still be running or PR creation failed.
                   </div>
                 )}
+
 
                 {rejectModal ? (
                   <div style={{ background: 'var(--da-surface-2)', padding: '1rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-border)' }}>
@@ -990,7 +1057,18 @@ export default function QADashboard() {
             onClose={() => setLogsPanelStory(null)}
           />
         )}
+
+        {/* ── EVIDENCE REPORT MODAL (Point 7) ── */}
+        {evidenceModalStory && (
+          <EvidenceModal
+            storyId={evidenceModalStory.id}
+            storyKey={evidenceModalStory.jira_story_key || evidenceModalStory.external_task_id}
+            storyTitle={evidenceModalStory.title}
+            onClose={() => setEvidenceModalStory(null)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
 }
+

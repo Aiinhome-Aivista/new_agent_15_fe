@@ -8,17 +8,20 @@ import {
   triggerRun,
   triggerRework,
   updateStory,
-  deleteStory
+  deleteStory,
+  downloadStoryEvidenceBlob
 } from '../../services/api';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
+import EvidenceModal from '../../components/EvidenceModal';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
   RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText, X, User,
   Paperclip, UploadCloud, File, Trash2, Tag, Calendar, Hash, CheckCircle2,
   Edit3, Filter, Lock, Search, Sparkles, ExternalLink, AlertTriangle, RotateCcw,
-  GitBranch, GitPullRequest
+  GitBranch, GitPullRequest, Download
 } from 'lucide-react';
+
 
 import '../../styles/dashboard.css';
 
@@ -58,6 +61,35 @@ export default function PODashboard() {
   // Delete confirmation modal state
   const [storyToDelete, setStoryToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Evidence modal state and quick download state
+  const [evidenceModalStory, setEvidenceModalStory] = useState(null);
+  const [quickDownloadingId, setQuickDownloadingId] = useState(null);
+
+  const handleQuickDownloadPdf = async (e, story) => {
+    e.stopPropagation();
+    if (!story) return;
+    try {
+      setQuickDownloadingId(story.id);
+      const response = await downloadStoryEvidenceBlob(story.id, 'pdf');
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const key = story.jira_story_key || story.external_task_id || `story_${story.id}`;
+      a.download = `evidence_${key}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Quick PDF download failed:', err);
+      showAlert(`Failed to download PDF: ${err.response?.data?.error || err.message || 'Error'}`);
+    } finally {
+      setQuickDownloadingId(null);
+    }
+  };
+
 
   const handleDeleteStory = async () => {
     if (!storyToDelete) return;
@@ -1008,9 +1040,51 @@ export default function PODashboard() {
                                     )}
                                   </>
                                 ) : (
-                                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', padding: '0.25rem 0.5rem' }}>
-                                    <Lock size={12} /> View Only
-                                  </span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <button 
+                                      className="da-btn da-btn-outline" 
+                                      style={{ 
+                                        padding: '0.25rem 0.6rem', 
+                                        fontSize: '0.75rem', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '4px',
+                                        color: '#FF5A14',
+                                        borderColor: 'rgba(255,90,20,0.4)',
+                                        background: 'rgba(255,90,20,0.06)'
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEvidenceModalStory(story);
+                                      }}
+                                      title="View full generated evidence report modal"
+                                    >
+                                      <FileText size={13} /> Evidence
+                                    </button>
+                                    <button 
+                                      className="da-btn da-btn-outline" 
+                                      style={{ 
+                                        padding: '0.25rem 0.5rem', 
+                                        fontSize: '0.75rem', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '4px',
+                                        color: '#38bdf8',
+                                        borderColor: 'rgba(56,189,248,0.4)',
+                                        background: 'rgba(56,189,248,0.06)'
+                                      }}
+                                      onClick={(e) => handleQuickDownloadPdf(e, story)}
+                                      disabled={quickDownloadingId === story.id}
+                                      title="Quick download evidence in PDF format"
+                                    >
+                                      {quickDownloadingId === story.id ? (
+                                        <RefreshCw size={12} className="animate-spin" />
+                                      ) : (
+                                        <Download size={12} />
+                                      )}
+                                      PDF
+                                    </button>
+                                  </div>
                                 )}
                               {/* Logs button — commented out */}
                               {/* 
@@ -2013,15 +2087,28 @@ export default function PODashboard() {
               alignItems: 'center',
               gap: '0.75rem'
             }}>
-              <button
-                className="da-btn da-btn-outline"
-                style={{ borderColor: 'var(--da-border-orange)', color: 'var(--da-accent)', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
-                onClick={() => {
-                  setLogsPanelStory(selectedStory);
-                }}
-              >
-                View Pipeline Logs
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  className="da-btn da-btn-outline"
+                  style={{ borderColor: 'var(--da-border-orange)', color: 'var(--da-accent)', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                  onClick={() => {
+                    setLogsPanelStory(selectedStory);
+                  }}
+                >
+                  View Pipeline Logs
+                </button>
+                <button
+                  className="da-btn da-btn-outline"
+                  style={{ borderColor: 'rgba(56,189,248,0.5)', color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', background: 'rgba(56,189,248,0.06)' }}
+                  onClick={() => {
+                    setEvidenceModalStory(selectedStory);
+                  }}
+                  title="View full evidence report and artifacts"
+                >
+                  <FileText size={14} /> View Evidence
+                </button>
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button className="da-btn da-btn-ghost" onClick={() => setSelectedStory(null)}>
                   Close
@@ -2412,6 +2499,17 @@ export default function PODashboard() {
           onClose={() => setLogsPanelStory(null)}
         />
       )}
+
+      {/* ── EVIDENCE REPORT MODAL (Point 7) ── */}
+      {evidenceModalStory && (
+        <EvidenceModal
+          storyId={evidenceModalStory.id}
+          storyKey={evidenceModalStory.jira_story_key || evidenceModalStory.external_task_id}
+          storyTitle={evidenceModalStory.title}
+          onClose={() => setEvidenceModalStory(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }
+

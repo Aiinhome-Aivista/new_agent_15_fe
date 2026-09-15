@@ -160,4 +160,39 @@ export const testGithubConnection = async () => {
   return r.data;
 };
 
+// ── Evidence & GitHub Conversation ─────────────────────────────────────────────
+export const fetchStoryEvidence = async (storyId) => {
+  const r = await apiClient.get(`/api/stories/${storyId}/evidence`);
+  return r.data;
+};
+
+export const downloadStoryEvidenceBlob = async (storyId, format = 'pdf') => {
+  const r = await apiClient.get(`/api/stories/${storyId}/evidence/download`, {
+    params: { format },
+    responseType: 'blob',
+  });
+  return r;
+};
+
+export const fetchPREvidence = async (prId, format = 'json') => {
+  const r = await apiClient.get(`/api/pull-requests/${prId}/evidence`, {
+    params: { format }
+  });
+  return r.data;
+};
+
+export const downloadPREvidenceBlob = async (prId) => {
+  const r = await apiClient.get(`/api/pull-requests/${prId}/evidence`, {
+    params: { format: 'download' },
+    responseType: 'blob',
+  });
+  return r;
+};
+
+export const fetchPRConversation = async (prId) => {
+  const r = await apiClient.get(`/api/pull-requests/${prId}/conversation`);
+  return r.data;
+};
+
 export default apiClient;
+

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchPullRequests, fetchPullRequest, fetchAuditLogs } from '../../services/api';
+import { fetchPullRequests, fetchPullRequest, fetchAuditLogs, downloadPREvidenceBlob } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
-import { GitPullRequest, ClipboardList, AlertTriangle, X } from 'lucide-react';
+import PRConversationSection from '../../components/PRConversationSection';
+import { GitPullRequest, ClipboardList, AlertTriangle, X, Download, FileText, RefreshCw } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const PR_STATUS_CLASS = { open: 'open', merged: 'merged', rejected: 'rejected', closed: 'todo' };
@@ -18,9 +19,33 @@ export default function LeadDashboard() {
   const [selectedPR, setSelectedPR] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [downloadingEvidence, setDownloadingEvidence] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   const [tab, setTab] = useState('prs'); // 'prs' | 'audit'
   const [error, setError] = useState(null);
+
+  async function handleDownloadEvidence(prId) {
+    if (!prId) return;
+    setDownloadingEvidence(true);
+    try {
+      const res = await downloadPREvidenceBlob(prId);
+      const blob = new Blob([res.data], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evidence_pr_${prId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Failed to download PR evidence:', err);
+      alert('Failed to download evidence: ' + (err.message || 'Error'));
+    } finally {
+      setDownloadingEvidence(false);
+    }
+  }
+
 
   useEffect(() => { loadPRs(); }, []);
 
@@ -130,13 +155,36 @@ export default function LeadDashboard() {
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem' }}>
+                    {/* Live GitHub PR Conversation & Reviews Timeline */}
+                    <PRConversationSection
+                      prId={selectedPR.id}
+                      prNumber={selectedPR.pr_number}
+                      prUrl={selectedPR.pr_url}
+                      cachedSummary={selectedPR.pr_summary}
+                    />
+
+                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       {selectedPR.pr_url && (
                         <a href={selectedPR.pr_url} target="_blank" rel="noreferrer" className="da-btn da-btn-outline" style={{ flex: 1, textAlign: 'center' }}>
                           View on GitHub ↗
                         </a>
                       )}
+                      <button
+                        onClick={() => handleDownloadEvidence(selectedPR.id)}
+                        disabled={downloadingEvidence}
+                        className="da-btn da-btn-outline"
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#FF5A14', borderColor: 'rgba(255,90,20,0.4)', background: 'rgba(255,90,20,0.06)' }}
+                        title="Download PR evidence report JSON"
+                      >
+                        {downloadingEvidence ? (
+                          <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                          <Download size={14} />
+                        )}
+                        Download Evidence
+                      </button>
                     </div>
+
                   </div>
                 )}
               </div>
