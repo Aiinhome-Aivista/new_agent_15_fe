@@ -1498,7 +1498,7 @@ export default function PODashboard() {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           padding: '0.5rem 0.8rem',
-                          background: '#FFFFFF',
+                          background: 'var(--da-surface-2)',
                           border: '1px solid var(--da-border)',
                           borderRadius: 'var(--da-radius-sm)',
                           fontSize: '0.82rem'
@@ -1506,7 +1506,7 @@ export default function PODashboard() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
                           <Paperclip size={14} style={{ color: 'var(--da-accent)', flexShrink: 0 }} />
-                          <span style={{ fontWeight: 600, color: '#1f2937', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--da-text)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                             {file.name}
                           </span>
                           <span style={{ color: '#888', fontSize: '0.72rem', flexShrink: 0 }}>
@@ -1794,7 +1794,7 @@ export default function PODashboard() {
                     </span>
                   )}
                 </div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937', fontWeight: 700 }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--da-text)', fontWeight: 700 }}>
                   {selectedStory.title}
                 </h3>
               </div>
@@ -1810,7 +1810,7 @@ export default function PODashboard() {
             {/* Meta Grid */}
             <div style={{
               padding: '1rem 1.5rem',
-              background: '#FFFFFF',
+              background: 'var(--da-surface-2)',
               borderBottom: '1px solid var(--da-border)',
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -1821,7 +1821,7 @@ export default function PODashboard() {
                 <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
                   ASSIGNEE
                 </span>
-                <strong style={{ color: '#1f2937' }}>
+                <strong style={{ color: 'var(--da-text)' }}>
                   {selectedStory.repository_details?.[0]?.external_assignee || 'Unassigned'}
                 </strong>
               </div>
@@ -1830,7 +1830,7 @@ export default function PODashboard() {
                   BRANCH
                 </span>
                 <code style={{ 
-                  background: 'var(--da-surface-2)', 
+                  background: 'var(--da-surface)', 
                   padding: '3px 8px', 
                   borderRadius: '4px', 
                   color: 'var(--da-accent)', 
@@ -1856,7 +1856,7 @@ export default function PODashboard() {
                   <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
                     DUE DATE
                   </span>
-                  <span style={{ color: '#1f2937', fontWeight: 600 }}>
+                  <span style={{ color: 'var(--da-text)', fontWeight: 600 }}>
                     {selectedStory.repository_details[0].due_date}
                   </span>
                 </div>
@@ -1895,7 +1895,7 @@ export default function PODashboard() {
               display: 'flex',
               flexDirection: 'column',
               gap: '1.25rem',
-              background: '#FFFFFF'
+              background: 'var(--da-surface)'
             }}>
               <div>
                 <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--da-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
@@ -1908,7 +1908,7 @@ export default function PODashboard() {
                   border: '1px solid var(--da-border)',
                   fontSize: '0.88rem',
                   lineHeight: 1.65,
-                  color: '#2d3748',
+                  color: 'var(--da-text)',
                   whiteSpace: 'pre-wrap',
                   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                   wordBreak: 'break-word'
@@ -1929,7 +1929,7 @@ export default function PODashboard() {
                     border: '1px solid var(--da-border)',
                     fontSize: '0.88rem',
                     lineHeight: 1.6,
-                    color: '#2d3748',
+                    color: 'var(--da-text)',
                     whiteSpace: 'pre-wrap'
                   }}>
                     {selectedStory.acceptance_criteria}
@@ -1960,7 +1960,7 @@ export default function PODashboard() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Paperclip size={14} style={{ color: 'var(--da-accent)' }} />
-                          <span style={{ fontWeight: 600, color: '#1f2937' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
                             {att.filename || `Attachment ${attIdx + 1}`}
                           </span>
                           {att.size && (
@@ -2092,7 +2092,7 @@ export default function PODashboard() {
                   </span>
                   <span className="da-badge todo">TO-DO</span>
                 </div>
-                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: '#1f2937', fontWeight: 700 }}>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--da-text)', fontWeight: 700 }}>
                   Edit Story Details
                 </h3>
               </div>

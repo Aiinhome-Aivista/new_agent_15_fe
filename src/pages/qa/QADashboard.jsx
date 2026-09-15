@@ -704,7 +704,7 @@ export default function QADashboard() {
               className="da-modal-content" 
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: '#FFFFFF',
+                background: 'var(--da-surface)',
                 borderRadius: 'var(--da-radius)',
                 maxWidth: '780px',
                 width: '95%',
@@ -752,7 +752,7 @@ export default function QADashboard() {
                       </span>
                     )}
                   </div>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1f2937', fontWeight: 700 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--da-text)', fontWeight: 700 }}>
                     {selectedApproved.story?.title || selectedApproved.title || 'Story Details'}
                   </h3>
                 </div>
@@ -768,7 +768,7 @@ export default function QADashboard() {
               {/* Metadata Highlights Bar */}
               <div style={{
                 padding: '1rem 1.5rem',
-                background: '#fafafa',
+                background: 'var(--da-surface-2)',
                 borderBottom: '1px solid var(--da-border)',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
@@ -779,7 +779,7 @@ export default function QADashboard() {
                   <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
                     APPROVED BY
                   </span>
-                  <strong style={{ color: '#1f2937', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <strong style={{ color: 'var(--da-text)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <UserCheck size={14} color="var(--da-success)" />
                     {selectedApproved.reviewer?.name || selectedApproved.reviewer?.email || 'QA Reviewer'}
                   </strong>
@@ -789,7 +789,7 @@ export default function QADashboard() {
                   <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
                     APPROVAL TIMESTAMP
                   </span>
-                  <span style={{ color: '#374151', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: 'var(--da-text)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Calendar size={13} />
                     {selectedApproved.approved_at ? new Date(selectedApproved.approved_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Recorded'}
                   </span>
@@ -840,7 +840,7 @@ export default function QADashboard() {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1.25rem',
-                background: '#FFFFFF'
+                background: 'var(--da-surface)'
               }}>
                 {/* QA Feedback Section */}
                 <div style={{
@@ -852,7 +852,7 @@ export default function QADashboard() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.4rem', color: 'var(--da-success)', fontWeight: 700, fontSize: '0.85rem' }}>
                     <MessageSquare size={15} /> QA Review Feedback & Sign-off Notes
                   </div>
-                  <div style={{ fontSize: '0.88rem', color: '#1f2937', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                  <div style={{ fontSize: '0.88rem', color: 'var(--da-text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                     {selectedApproved.comments || 'Story was verified against acceptance criteria and approved for merge.'}
                   </div>
                 </div>
@@ -869,7 +869,7 @@ export default function QADashboard() {
                     border: '1px solid var(--da-border)',
                     fontSize: '0.88rem',
                     lineHeight: 1.6,
-                    color: '#2d3748',
+                    color: 'var(--da-text)',
                     whiteSpace: 'pre-wrap',
                     maxHeight: '180px',
                     overflowY: 'auto'
