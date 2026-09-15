@@ -186,7 +186,9 @@ export default function AdminDashboard() {
                 <tbody>
                   {auditLogs.map(a => (
                     <tr key={a.id}>
-                      <td style={{ color: 'var(--da-muted)', fontSize: '0.85rem' }}>{new Date(a.created_at).toLocaleString()}</td>
+                      <td style={{ color: 'var(--da-muted)', fontSize: '0.85rem' }}>
+                        {a.created_at ? new Date(a.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'medium' }) : ''}
+                      </td>
                       <td><strong>{a.action}</strong></td>
                       <td>{a.user_id ? `User ${a.user_id}` : 'System'}</td>
                       <td><code style={{ fontSize: '0.8rem' }}>{a.target_type}:{a.target_id}</code></td>
