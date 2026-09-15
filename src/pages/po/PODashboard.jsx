@@ -2279,47 +2279,93 @@ export default function PODashboard() {
       {/* ── DELETE CONFIRMATION MODAL ── */}
       {storyToDelete && (
         <div className="da-modal-overlay" onClick={() => !isDeleting && setStoryToDelete(null)}>
-          <div className="da-modal" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-            <div className="da-modal-header" style={{ borderBottom: '1px solid var(--da-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
-                <AlertTriangle size={20} />
-                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Delete Story & Jira Issue</span>
+          <div 
+            className="da-modal" 
+            style={{ 
+              maxWidth: '480px', 
+              width: '100%', 
+              background: 'var(--da-surface)', 
+              color: 'var(--da-text)', 
+              border: '1px solid var(--da-border-orange)', 
+              borderRadius: 'var(--da-radius)', 
+              boxShadow: '0 20px 45px rgba(0, 0, 0, 0.4)', 
+              overflow: 'hidden' 
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="da-modal-header" style={{
+              padding: '1.1rem 1.5rem',
+              borderBottom: '1px solid var(--da-border)',
+              background: 'var(--da-surface-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#ef4444' }}>
+                <AlertTriangle size={22} />
+                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--da-text)' }}>Delete Story & Jira Issue</span>
               </div>
               <button 
                 className="da-modal-close" 
                 disabled={isDeleting}
                 onClick={() => setStoryToDelete(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--da-muted)',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 'var(--da-radius-sm)'
+                }}
+                title="Close"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <div className="da-modal-body" style={{ padding: '1.25rem 1.5rem' }}>
-              <p style={{ margin: '0 0 1rem 0', color: 'var(--da-text-primary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+            <div className="da-modal-body" style={{ padding: '1.25rem 1.5rem', background: 'var(--da-surface)' }}>
+              <p style={{ margin: '0 0 1.1rem 0', color: 'var(--da-text)', fontSize: '0.98rem', lineHeight: '1.5' }}>
                 Are you sure you want to delete <strong style={{ color: '#ef4444' }}>"{storyToDelete.title}"</strong>?
               </p>
               <div style={{
                 background: 'rgba(239, 68, 68, 0.08)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                borderRadius: '8px',
-                padding: '0.85rem 1rem',
-                fontSize: '0.85rem',
-                color: '#f87171',
-                lineHeight: '1.4'
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: 'var(--da-radius-sm)',
+                padding: '0.9rem 1.15rem',
+                fontSize: '0.88rem',
+                color: 'var(--da-text)',
+                lineHeight: '1.5'
               }}>
-                ⚠️ <strong>Action Details:</strong>
-                <ul style={{ margin: '0.4rem 0 0 1.2rem', padding: 0 }}>
-                  <li>Delete story item from <strong>DEVAA App</strong>.</li>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: 700, marginBottom: '0.35rem' }}>
+                  <AlertTriangle size={16} /> Action Details:
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--da-text)' }}>
+                  <li style={{ marginBottom: '0.2rem' }}>Delete story item from <strong>DEVAA App</strong>.</li>
                   <li>Delete issue <strong>{storyToDelete.jira_story_key || storyToDelete.external_task_id || 'linked'}</strong> from <strong>Jira</strong>.</li>
                 </ul>
               </div>
             </div>
 
-            <div className="da-modal-footer" style={{ borderTop: '1px solid var(--da-border)', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div className="da-modal-footer" style={{
+              borderTop: '1px solid var(--da-border)',
+              padding: '1rem 1.5rem',
+              background: 'var(--da-surface-2)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '0.75rem'
+            }}>
               <button 
                 className="da-btn da-btn-ghost" 
                 disabled={isDeleting}
                 onClick={() => setStoryToDelete(null)}
+                style={{
+                  padding: '0.5rem 1.25rem',
+                  fontSize: '0.88rem',
+                  fontWeight: 600
+                }}
               >
                 Cancel
               </button>
@@ -2329,22 +2375,27 @@ export default function PODashboard() {
                   background: '#ef4444',
                   color: '#ffffff',
                   border: 'none',
+                  padding: '0.5rem 1.25rem',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
                   opacity: isDeleting ? 0.7 : 1,
-                  cursor: isDeleting ? 'not-allowed' : 'pointer'
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  borderRadius: 'var(--da-radius-sm)',
+                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
                 }}
                 disabled={isDeleting}
                 onClick={handleDeleteStory}
               >
                 {isDeleting ? (
                   <>
-                    <RefreshCw size={14} className="lucide-animated-spin" /> Deleting...
+                    <RefreshCw size={15} className="lucide-animated-spin" /> Deleting...
                   </>
                 ) : (
                   <>
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={15} /> Delete
                   </>
                 )}
               </button>

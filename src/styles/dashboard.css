@@ -398,7 +398,14 @@
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
 .da-modal {
-  margin-bottom: 1.5rem;
+  background: var(--da-surface);
+  color: var(--da-text);
+  border: 1px solid var(--da-border-orange);
+  border-radius: var(--da-radius);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .da-modal-actions {
