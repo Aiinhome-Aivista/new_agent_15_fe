@@ -1545,10 +1545,10 @@ export default function PODashboard() {
                     }}>
                       <UploadCloud size={20} />
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1f2937' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--da-text)' }}>
                       Drag & drop files here, or <span style={{ color: 'var(--da-accent)', textDecoration: 'underline' }}>browse</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--da-muted)' }}>
                       Supports images, screenshots, PDFs, logs, docs, and ZIP files. Directly uploads to Jira issue attachments.
                     </div>
                   </div>
