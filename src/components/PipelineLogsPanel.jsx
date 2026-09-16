@@ -10,6 +10,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { X, RefreshCw, CheckCircle2, AlertTriangle, Info, MessageSquare, Zap } from 'lucide-react';
 import { fetchPipelineLogs } from '../services/api';
+import LoadingSpinner from './LoadingSpinner';
 
 /* ─── constants ────────────────────────────────────────────────── */
 const POLL_MS  = 2000;
@@ -209,18 +210,7 @@ export default function PipelineLogsPanel({ storyId, storyTitle, onClose }) {
           )}
 
           {logs.length === 0 && !error && (
-            <div style={{
-              padding: '48px 18px', textAlign: 'center',
-              color: 'rgba(255,255,255,0.25)', fontSize: '0.83rem',
-              fontFamily: 'Inter,sans-serif',
-            }}>
-              <RefreshCw size={22} style={{
-                animation: 'pl-spin 1.3s linear infinite',
-                marginBottom: '14px', display: 'block', margin: '0 auto 14px',
-                color: '#FF5A14',
-              }} />
-              Waiting for pipeline to start…
-            </div>
+            <LoadingSpinner text="Waiting for pipeline to start…" size="md" />
           )}
 
           {logs.map((log, idx) => {

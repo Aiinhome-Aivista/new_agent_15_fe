@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { 
   X, Download, FileText, Printer, Check, Copy, AlertTriangle, 
-  ShieldCheck, RefreshCw, CheckCircle2
+  ShieldCheck, CheckCircle2
 } from 'lucide-react';
 import { fetchStoryEvidence, downloadStoryEvidenceBlob } from '../services/api';
+import LoadingSpinner from './LoadingSpinner';
 import '../styles/evidence-modal.css';
 
 function formatMarkdownToIst(text) {
@@ -132,7 +133,7 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
               title="Download evidence report as PDF document"
             >
               {downloadingFormat === 'pdf' ? (
-                <RefreshCw className="w-3.5 h-3.5 ev-spinner" style={{ width: 14, height: 14 }} />
+                <LoadingSpinner inline size="sm" color="#ffffff" />
               ) : (
                 <Download className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
               )}
@@ -146,7 +147,7 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
               title="Download evidence as Markdown file"
             >
               {downloadingFormat === 'md' ? (
-                <RefreshCw className="w-3.5 h-3.5 ev-spinner" style={{ width: 14, height: 14 }} />
+                <LoadingSpinner inline size="sm" />
               ) : (
                 <FileText className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
               )}
@@ -191,10 +192,7 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
         {/* Modal Body */}
         <div className="ev-modal-body">
           {loading ? (
-            <div className="ev-loading-container">
-              <RefreshCw className="ev-spinner" />
-              <p style={{ fontSize: '0.88rem' }}>Assembling DEVAA verification evidence dossier...</p>
-            </div>
+            <LoadingSpinner text="Assembling DEVAA verification evidence dossier..." size="md" />
           ) : error ? (
             <div className="ev-error-card">
               <div className="ev-error-icon">
@@ -209,7 +207,7 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
                 className="ev-btn ev-btn-secondary"
                 style={{ marginTop: '0.5rem' }}
               >
-                <RefreshCw className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
+                <LoadingSpinner inline size="sm" text="" />
                 <span>Try Again</span>
               </button>
             </div>

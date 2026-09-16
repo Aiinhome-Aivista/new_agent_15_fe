@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { fetchPullRequests, fetchPullRequest, fetchAuditLogs, downloadPREvidenceBlob } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import PRConversationSection from '../../components/PRConversationSection';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { GitPullRequest, ClipboardList, AlertTriangle, X, Download, FileText, RefreshCw } from 'lucide-react';
 import '../../styles/dashboard.css';
 
@@ -107,7 +108,7 @@ export default function LeadDashboard() {
             {/* PR List */}
             <div className="da-section">
               {loading ? (
-                <div className="da-loading"><div className="da-spinner" /> Loading PRs…</div>
+                <LoadingSpinner text="Loading PRs…" size="md" />
               ) : prs.length === 0 ? (
                 <div className="da-empty"><div className="da-empty-icon"><GitPullRequest size={48} /></div><h3>No pull requests yet</h3><p>PRs appear here after the DEVAA pipeline runs.</p></div>
               ) : (
@@ -142,7 +143,7 @@ export default function LeadDashboard() {
                 </div>
 
                 {detailLoading ? (
-                  <div className="da-loading"><div className="da-spinner" /> Loading…</div>
+                  <LoadingSpinner text="Loading PR details…" size="md" />
                 ) : (
                   <div>
                     <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>{selectedPR.pr_title || selectedPR.branch_name}</h3>

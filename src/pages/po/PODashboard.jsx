@@ -13,6 +13,7 @@ import {
 } from '../../services/api';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
 import EvidenceModal from '../../components/EvidenceModal';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import { 
@@ -782,7 +783,7 @@ export default function PODashboard() {
             </div>
             
             {loading ? (
-              <div className="da-loading"><div className="da-spinner"/> Loading stories...</div>
+              <LoadingSpinner text="Loading stories..." size="md" />
             ) : stories.length === 0 ? (
               <div className="da-empty">
                 <div className="da-empty-icon"><FileText size={48} /></div>
@@ -1674,7 +1675,7 @@ export default function PODashboard() {
             <div className="da-section-title" style={{ marginBottom: '1.5rem' }}>Active Task Connectors</div>
             
             {connectorLoading ? (
-               <div className="da-loading"><div className="da-spinner"/> Checking Connectors...</div>
+               <LoadingSpinner text="Checking Connectors..." size="md" />
             ) : connectorStatus && connectorStatus.active_provider !== 'none' ? (
               <div className="da-connector-card">
                 <div className="da-connector-header">

@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { fetchAdminMetrics, fetchAuditLogs, fetchGuardrailEvents, fetchAllWorkflows, fetchUsers } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { PieChart, Settings, Shield, ClipboardList, Users, AlertTriangle } from 'lucide-react';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/dashboard.css';
 
 const TABS = [
@@ -71,7 +72,7 @@ export default function AdminDashboard() {
       <div className="da-body">
         {error && <div className="da-alert error"><AlertTriangle size={16} /> {error}</div>}
 
-        {loading && <div className="da-loading"><div className="da-spinner" /> Loading…</div>}
+        {loading && <LoadingSpinner text="Loading admin metrics…" size="md" />}
 
         {/* ── OVERVIEW ── */}
         {tab === 'overview' && !loading && metrics && (

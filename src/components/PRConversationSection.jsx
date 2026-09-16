@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { 
   MessageSquare, ChevronDown, ChevronUp, RefreshCw, 
-  CheckCircle2, AlertOctagon, CornerDownRight, User, ExternalLink 
+  ExternalLink, GitPullRequest, GitCommit, CheckCircle2, AlertCircle, User
 } from 'lucide-react';
+import LoadingSpinner from './LoadingSpinner';
 import { fetchPRConversation } from '../services/api';
 
 export default function PRConversationSection({ prId, prNumber, prUrl, cachedSummary }) {
@@ -126,10 +127,7 @@ export default function PRConversationSection({ prId, prNumber, prUrl, cachedSum
       {expanded && (
         <div className="p-4 space-y-4 text-xs border-t border-gray-700/50 bg-[#161821]">
           {loading ? (
-            <div className="flex items-center justify-center py-6 text-gray-400 gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin text-[#FF5A14]" />
-              <span>Fetching live comments from GitHub...</span>
-            </div>
+            <LoadingSpinner text="Fetching live comments from GitHub..." size="sm" />
           ) : error ? (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300">
               <p className="font-semibold">Unable to fetch live GitHub conversation:</p>

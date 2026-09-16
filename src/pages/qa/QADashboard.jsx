@@ -5,6 +5,7 @@ import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
 import EvidenceModal from '../../components/EvidenceModal';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import PRConversationSection from '../../components/PRConversationSection';
 import { 
   Search, RefreshCw, CheckCircle, CheckCircle2, AlertTriangle, 
@@ -319,7 +320,7 @@ export default function QADashboard() {
               </div>
 
               {loading ? (
-                <div className="da-loading"><div className="da-spinner" /> Loading queue…</div>
+                <LoadingSpinner text="Loading queue…" size="md" />
               ) : queue.length === 0 ? (
                 <div className="da-empty">
                   <div className="da-empty-icon"><CheckCircle size={48} /></div>
@@ -557,7 +558,7 @@ export default function QADashboard() {
             </div>
 
             {loadingApproved ? (
-              <div className="da-loading"><div className="da-spinner" /> Loading approved stories…</div>
+              <LoadingSpinner text="Loading approved stories…" size="md" />
             ) : filteredApproved.length === 0 ? (
               <div className="da-empty">
                 <div className="da-empty-icon"><CheckCircle2 size={48} color="var(--da-success)" /></div>
