@@ -7,6 +7,28 @@ import {
 import { fetchStoryEvidence, downloadStoryEvidenceBlob } from '../services/api';
 import '../styles/evidence-modal.css';
 
+function formatMarkdownToIst(text) {
+  if (!text) return '';
+  return text.replace(/(\d{4}-\d{2}-\d{2})[\sT](\d{2}:\d{2}:\d{2})(?:\.\d+)?\s*(?:Z|UTC)/gi, (match, dateStr, timeStr) => {
+    try {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+      const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+      if (isNaN(utcDate.getTime())) return match;
+      const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000));
+      const istYear = istDate.getUTCFullYear();
+      const istMonth = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+      const istDay = String(istDate.getUTCDate()).padStart(2, '0');
+      const istHours = String(istDate.getUTCHours()).padStart(2, '0');
+      const istMinutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+      const istSeconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+      return `${istYear}-${istMonth}-${istDay} ${istHours}:${istMinutes}:${istSeconds} IST`;
+    } catch (e) {
+      return match;
+    }
+  });
+}
+
 export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -194,7 +216,7 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
           ) : (
             <div className="ev-doc-wrapper">
               <div className="ev-markdown">
-                <ReactMarkdown>{evidence?.markdown || ''}</ReactMarkdown>
+                <ReactMarkdown>{formatMarkdownToIst(evidence?.markdown || '')}</ReactMarkdown>
               </div>
             </div>
           )}
