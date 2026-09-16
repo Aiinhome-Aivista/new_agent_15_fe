@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { 
-  X, Download, FileText, Printer, Check, Copy, AlertCircle, 
-  ExternalLink, ShieldCheck, RefreshCw 
+  X, Download, FileText, Printer, Check, Copy, AlertTriangle, 
+  ShieldCheck, RefreshCw, CheckCircle2
 } from 'lucide-react';
 import { fetchStoryEvidence, downloadStoryEvidenceBlob } from '../services/api';
+import '../styles/evidence-modal.css';
 
 export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }) {
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,12 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
       setEvidence(data);
     } catch (err) {
       console.error('Failed to load evidence:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to load evidence report');
+      const rawErr = err.response?.data?.error || err.message || 'Failed to load evidence report';
+      let cleanErr = rawErr;
+      if (typeof rawErr === 'string' && rawErr.includes('OperationalError')) {
+        cleanErr = 'Database query encountered an issue. The evidence structure is being updated.';
+      }
+      setError(cleanErr);
     } finally {
       setLoading(false);
     }
@@ -36,7 +42,7 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
     if (!evidence?.markdown) return;
     navigator.clipboard.writeText(evidence.markdown);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2200);
   };
 
   const handleDownload = async (format = 'pdf') => {
@@ -69,44 +75,44 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+    <div className="ev-modal-overlay" onClick={onClose}>
       <div 
-        className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-[#1e222d] border border-gray-700/60 rounded-xl shadow-2xl overflow-hidden text-gray-100"
+        className="ev-modal-container"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/80 bg-[#181b24]">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#FF5A14]/20 to-orange-500/10 border border-[#FF5A14]/30 rounded-lg text-[#FF5A14]">
+        <div className="ev-modal-header">
+          <div className="ev-header-info">
+            <div className="ev-shield-icon">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-white tracking-wide">
-                  {evidence?.jira_key || storyKey || `Story #${storyId}`}
+            <div className="ev-header-titles">
+              <div className="ev-header-topline">
+                <span className="ev-story-key">
+                  {evidence?.jira_key || storyKey || `Task #${storyId}`}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                  Evidence Report
+                <span className="ev-badge-evidence">
+                  <CheckCircle2 className="w-3 h-3" /> Evidence Report
                 </span>
               </div>
-              <p className="text-xs text-gray-400 truncate max-w-md">
+              <p className="ev-story-title">
                 {evidence?.title || storyTitle || 'Verification & Artifact Dossier'}
               </p>
             </div>
           </div>
 
           {/* Action Toolbar */}
-          <div className="flex items-center gap-2">
+          <div className="ev-toolbar">
             <button
               onClick={() => handleDownload('pdf')}
               disabled={downloadingFormat !== null || loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#FF5A14] hover:bg-[#e04f12] text-white shadow transition-all duration-150 disabled:opacity-50"
-              title="Download evidence as PDF document"
+              className="ev-btn ev-btn-primary"
+              title="Download evidence report as PDF document"
             >
               {downloadingFormat === 'pdf' ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 ev-spinner" style={{ width: 14, height: 14 }} />
               ) : (
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
               )}
               <span>PDF</span>
             </button>
@@ -114,13 +120,13 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
             <button
               onClick={() => handleDownload('md')}
               disabled={downloadingFormat !== null || loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition-all duration-150 disabled:opacity-50"
+              className="ev-btn ev-btn-secondary"
               title="Download evidence as Markdown file"
             >
               {downloadingFormat === 'md' ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 ev-spinner" style={{ width: 14, height: 14 }} />
               ) : (
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
               )}
               <span>Markdown</span>
             </button>
@@ -128,13 +134,13 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
             <button
               onClick={handleCopy}
               disabled={loading || !evidence?.markdown}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 transition-all duration-150"
-              title="Copy markdown to clipboard"
+              className="ev-btn ev-btn-secondary"
+              title="Copy markdown content to clipboard"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5" style={{ width: 14, height: 14, color: '#4ade80' }} />
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
               )}
               <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
@@ -142,51 +148,52 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
             <button
               onClick={handlePrint}
               disabled={loading}
-              className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 border border-gray-700 transition-all"
-              title="Print document"
+              className="ev-btn ev-btn-icon"
+              title="Print evidence document"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4" style={{ width: 16, height: 16 }} />
             </button>
 
-            <div className="h-5 w-px bg-gray-700 mx-1" />
+            <div className="ev-divider-v" />
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+              className="ev-btn-close"
               title="Close modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" style={{ width: 18, height: 18 }} />
             </button>
           </div>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#1a1d26] custom-scrollbar">
+        <div className="ev-modal-body">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-3">
-              <RefreshCw className="w-8 h-8 animate-spin text-[#FF5A14]" />
-              <p className="text-sm">Assembling evidence report dossier...</p>
+            <div className="ev-loading-container">
+              <RefreshCw className="ev-spinner" />
+              <p style={{ fontSize: '0.88rem' }}>Assembling DEVAA verification evidence dossier...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-full text-red-400">
-                <AlertCircle className="w-8 h-8" />
+            <div className="ev-error-card">
+              <div className="ev-error-icon">
+                <AlertTriangle style={{ width: 28, height: 28 }} />
               </div>
               <div>
-                <h4 className="text-base font-semibold text-gray-200">Unable to Load Evidence</h4>
-                <p className="text-sm text-gray-400 mt-1 max-w-md">{error}</p>
+                <div className="ev-error-title">Unable to Load Evidence Report</div>
+                <div className="ev-error-msg">{error}</div>
               </div>
               <button
                 onClick={loadEvidence}
-                className="px-4 py-2 text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 rounded-lg transition-all"
+                className="ev-btn ev-btn-secondary"
+                style={{ marginTop: '0.5rem' }}
               >
-                Try Again
+                <RefreshCw className="w-3.5 h-3.5" style={{ width: 14, height: 14 }} />
+                <span>Try Again</span>
               </button>
             </div>
           ) : (
-            <div className="bg-[#13161f] border border-gray-800 rounded-xl p-6 text-gray-200 shadow-inner">
-              {/* Markdown Content Renderer */}
-              <div className="prose prose-invert max-w-none prose-headings:text-gray-100 prose-headings:font-semibold prose-a:text-[#FF5A14] prose-code:text-[#FF5A14] prose-code:bg-gray-800/60 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900/90 prose-pre:border prose-pre:border-gray-800 prose-table:border-collapse prose-th:border prose-th:border-gray-700 prose-th:bg-gray-800/50 prose-th:p-2 prose-td:border prose-td:border-gray-800 prose-td:p-2">
+            <div className="ev-doc-wrapper">
+              <div className="ev-markdown">
                 <ReactMarkdown>{evidence?.markdown || ''}</ReactMarkdown>
               </div>
             </div>
@@ -194,14 +201,14 @@ export default function EvidenceModal({ storyId, storyKey, storyTitle, onClose }
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-800 bg-[#161821] text-xs text-gray-400">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+        <div className="ev-modal-footer">
+          <div className="ev-footer-left">
+            <span className="ev-status-dot"></span>
             <span>Stored in DEVAA Repository &bull; Isolated from Jira Attachments</span>
           </div>
           <div>
             {evidence?.filename && (
-              <span className="font-mono text-[11px] text-gray-400 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/60">
+              <span className="ev-filename-badge">
                 {evidence.filename}
               </span>
             )}
