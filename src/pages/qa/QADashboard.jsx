@@ -634,7 +634,7 @@ export default function QADashboard() {
                                   DONE
                                 </span>
                               </div>
-                              <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1f2937' }}>
+                              <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--da-text)' }}>
                                 {storyTitle}
                               </span>
                             </div>
@@ -697,7 +697,7 @@ export default function QADashboard() {
                               }}>
                                 {(reviewerObj.name || 'QA')[0].toUpperCase()}
                               </div>
-                              <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#374151' }}>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--da-text)' }}>
                                 {reviewerObj.name || reviewerObj.email || 'QA Reviewer'}
                               </span>
                             </div>
@@ -718,7 +718,7 @@ export default function QADashboard() {
                             <span 
                               style={{ 
                                 fontSize: '0.78rem', 
-                                color: '#4b5563', 
+                                color: 'var(--da-muted)', 
                                 overflow: 'hidden', 
                                 textOverflow: 'ellipsis', 
                                 whiteSpace: 'nowrap', 
@@ -735,10 +735,11 @@ export default function QADashboard() {
                             <button
                               className="da-btn da-btn-outline"
                               style={{ 
-                                padding: '0.25rem 0.6rem', 
+                                padding: '0.25rem 0.65rem', 
                                 fontSize: '0.75rem', 
                                 borderColor: 'var(--da-border-orange)', 
                                 color: 'var(--da-accent)',
+                                background: 'var(--da-surface-2)',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '4px'

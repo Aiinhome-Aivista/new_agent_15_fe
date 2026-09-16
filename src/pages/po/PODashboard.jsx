@@ -776,7 +776,7 @@ export default function PODashboard() {
                     Synced: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
-                <button className="da-btn da-btn-outline" onClick={handleManualSync} disabled={syncing} style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
+                <button className="da-btn da-btn-secondary" onClick={handleManualSync} disabled={syncing} style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
                   <RefreshCw size={14} className={syncing ? 'lucide-animated-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync Jira'}
                 </button>
               </div>
@@ -993,7 +993,7 @@ export default function PODashboard() {
                                 ) : isTodo ? (
                                   <>
                                     <button 
-                                      className="da-btn da-btn-outline" 
+                                      className="da-btn da-btn-secondary" 
                                       style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                                       onClick={(e) => {
                                         e.stopPropagation();
