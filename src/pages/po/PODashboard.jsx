@@ -204,19 +204,16 @@ export default function PODashboard() {
   const [tableFilter, setTableFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Helper to determine if story was created in DEVAA
+  // Helper to determine if story was created in DEVAA (e.g. by PO and pushed to Jira)
   const isDevaaStory = (story) => {
     if (!story) return false;
-    if (story.is_created_in_devaa) return true;
+    if (typeof story.is_created_in_devaa === 'boolean') {
+      return story.is_created_in_devaa;
+    }
     const details = story.repository_details?.[0] || {};
     return Boolean(
-      details.created_in_devaa ||
+      details.created_in_devaa === true ||
       details.origin === 'devaa' ||
-      details.priority ||
-      details.story_points ||
-      details.labels ||
-      details.start_date ||
-      (details.attachments && details.attachments.length > 0) ||
       story.external_provider === 'manual'
     );
   };
