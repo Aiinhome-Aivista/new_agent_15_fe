@@ -2089,6 +2089,7 @@ export default function PODashboard() {
               gap: '0.75rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* 
                 <button
                   className="da-btn da-btn-outline"
                   style={{ borderColor: 'var(--da-border-orange)', color: 'var(--da-accent)', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
@@ -2098,6 +2099,7 @@ export default function PODashboard() {
                 >
                   View Pipeline Logs
                 </button>
+                */}
                 <button
                   className="da-btn da-btn-outline"
                   style={{ borderColor: 'rgba(56,189,248,0.5)', color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', background: 'rgba(56,189,248,0.06)' }}
