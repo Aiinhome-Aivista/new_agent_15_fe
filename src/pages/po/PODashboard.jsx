@@ -2100,16 +2100,18 @@ export default function PODashboard() {
                   View Pipeline Logs
                 </button>
                 */}
-                <button
-                  className="da-btn da-btn-outline"
-                  style={{ borderColor: 'rgba(56,189,248,0.5)', color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', background: 'rgba(56,189,248,0.06)' }}
-                  onClick={() => {
-                    setEvidenceModalStory(selectedStory);
-                  }}
-                  title="View full evidence report and artifacts"
-                >
-                  <FileText size={14} /> View Evidence
-                </button>
+                {((selectedStory?.status || '').toLowerCase().replace(/[-_ ]/g, '') === 'done' || (selectedStory?.status || '').toLowerCase() === 'completed') && (
+                  <button
+                    className="da-btn da-btn-outline"
+                    style={{ borderColor: 'rgba(56,189,248,0.5)', color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', background: 'rgba(56,189,248,0.06)' }}
+                    onClick={() => {
+                      setEvidenceModalStory(selectedStory);
+                    }}
+                    title="View full evidence report and artifacts"
+                  >
+                    <FileText size={14} /> View Evidence
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>
