@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchAdminMetrics, fetchAuditLogs, fetchGuardrailEvents, fetchAllWorkflows, fetchUsers } from '../../services/api';
+import { fetchAdminMetrics, fetchAuditLogs, fetchGuardrailEvents, fetchAllWorkflows, fetchUsers, fetchWorkflowSteps } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
-import { PieChart, Settings, Shield, ClipboardList, Users, AlertTriangle } from 'lucide-react';
+import { PieChart, Settings, Shield, ClipboardList, Users, AlertTriangle, X, Terminal, Cpu, Coins, CheckCircle, XCircle } from 'lucide-react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/dashboard.css';
 
@@ -33,6 +33,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Workflow step detail modal state
+  const [selectedWorkflow, setSelectedWorkflow] = useState(null);
+  const [workflowSteps, setWorkflowSteps] = useState([]);
+  const [stepsLoading, setStepsLoading] = useState(false);
+
   useEffect(() => { loadTab('overview'); }, []);
 
   async function loadTab(t) {
@@ -57,6 +62,20 @@ export default function AdminDashboard() {
     } catch (e) {
       setError(e.response?.data?.error || `Failed to load ${t}.`);
     } finally { setLoading(false); }
+  }
+
+  async function handleWorkflowClick(wf) {
+    setSelectedWorkflow(wf);
+    setStepsLoading(true);
+    try {
+      const steps = await fetchWorkflowSteps(wf.id);
+      setWorkflowSteps(steps);
+    } catch (err) {
+      console.error('Failed to fetch workflow steps:', err);
+      setWorkflowSteps([]);
+    } finally {
+      setStepsLoading(false);
+    }
   }
 
   const summary = metrics?.summary || {};
@@ -137,20 +156,174 @@ export default function AdminDashboard() {
             <div className="da-section-title" style={{ marginBottom: '1rem' }}>All Workflows</div>
             <div className="da-table-wrap">
               <table className="da-table">
-                <thead><tr><th>ID</th><th>Story</th><th>Status</th><th>Branch</th><th>Created</th></tr></thead>
+                <thead><tr><th>ID</th><th>Story ID</th><th>Status</th><th>Current Agent</th><th>Steps</th><th>Created</th></tr></thead>
                 <tbody>
                   {workflows.map(wf => (
-                    <tr key={wf.id}>
-                      <td>{String(wf.id).substring(0,8)}</td>
-                      <td>{wf.story_id}</td>
-                      <td><span className={`da-badge ${wf.status === 'completed' ? 'green' : wf.status === 'failed' ? 'red' : 'blue'}`}>{wf.status}</span></td>
-                      <td>{wf.branch_name || '-'}</td>
-                      <td style={{ color: 'var(--da-muted)' }}>{new Date(wf.created_at).toLocaleString()}</td>
+                    <tr 
+                      key={wf.id} 
+                      onClick={() => handleWorkflowClick(wf)} 
+                      style={{ cursor: 'pointer' }}
+                      title="Click to view step-by-step agent execution log"
+                    >
+                      <td><strong>#{wf.id}</strong></td>
+                      <td>{wf.story_id ? `Story #${wf.story_id}` : 'General'}</td>
+                      <td><span className={`da-badge ${wf.status === 'Completed' || wf.status === 'completed' ? 'green' : wf.status === 'Failed' || wf.status === 'failed' ? 'red' : 'blue'}`}>{wf.status}</span></td>
+                      <td><span style={{ fontSize: '0.8rem', color: 'var(--da-text)' }}>{wf.current_agent || '-'}</span></td>
+                      <td><span className="da-badge default">{wf.step_count || 0} steps</span></td>
+                      <td style={{ color: 'var(--da-muted)' }}>{wf.created_at ? new Date(wf.created_at).toLocaleString() : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* Workflow Step Logs Modal */}
+            {selectedWorkflow && (
+              <div style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0, 0, 0, 0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                padding: '1.5rem'
+              }}>
+                <div style={{
+                  background: 'var(--da-surface)',
+                  border: '1px solid var(--da-border)',
+                  borderRadius: 'var(--da-radius)',
+                  width: '100%',
+                  maxWidth: '850px',
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)'
+                }}>
+                  {/* Modal Header */}
+                  <div style={{
+                    padding: '1rem 1.25rem',
+                    borderBottom: '1px solid var(--da-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'var(--da-surface-2)'
+                  }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--da-text)' }}>
+                        Workflow #{selectedWorkflow.id}: Step Execution Trace
+                      </h3>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--da-muted)' }}>
+                        Story ID: {selectedWorkflow.story_id || 'N/A'} | Status: {selectedWorkflow.status}
+                      </span>
+                    </div>
+                    <button 
+                      className="da-btn da-btn-ghost" 
+                      onClick={() => { setSelectedWorkflow(null); setWorkflowSteps([]); }}
+                      style={{ padding: '4px' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1 }}>
+                    {stepsLoading ? (
+                      <LoadingSpinner text="Fetching workflow step logs..." size="sm" />
+                    ) : workflowSteps.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--da-muted)' }}>
+                        No step execution logs recorded for Workflow #{selectedWorkflow.id}.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {workflowSteps.map((s, idx) => (
+                          <div 
+                            key={s.id || idx}
+                            style={{
+                              background: 'var(--da-surface-2)',
+                              border: '1px solid var(--da-border)',
+                              borderRadius: 'var(--da-radius-sm)',
+                              padding: '1rem'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--da-accent)' }}>
+                                  Step {idx + 1}: {s.step_type} Agent
+                                </span>
+                                <span className={`da-badge ${s.status === 'Completed' ? 'green' : s.status === 'Failed' ? 'red' : 'blue'}`}>
+                                  {s.status}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: 'var(--da-muted)' }}>
+                                {s.token_count ? (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Cpu size={12} /> {s.token_count} tokens
+                                  </span>
+                                ) : null}
+                                {s.cost_usd ? (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Coins size={12} /> ${s.cost_usd}
+                                  </span>
+                                ) : null}
+                                {s.created_at && <span>{new Date(s.created_at).toLocaleString()}</span>}
+                              </div>
+                            </div>
+
+                            {/* Agent Prompt */}
+                            {s.agent_prompt && (
+                              <div style={{ marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--da-muted)', textTransform: 'uppercase' }}>Prompt</span>
+                                <pre style={{
+                                  background: 'var(--da-bg)',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.78rem',
+                                  color: 'var(--da-text)',
+                                  whiteSpace: 'pre-wrap',
+                                  maxHeight: '120px',
+                                  overflowY: 'auto',
+                                  margin: '2px 0 0'
+                                }}>
+                                  {s.agent_prompt}
+                                </pre>
+                              </div>
+                            )}
+
+                            {/* Agent Output / Response */}
+                            {s.agent_response && (
+                              <div>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--da-muted)', textTransform: 'uppercase' }}>Output</span>
+                                <pre style={{
+                                  background: 'var(--da-bg)',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.78rem',
+                                  color: 'var(--da-text)',
+                                  whiteSpace: 'pre-wrap',
+                                  maxHeight: '180px',
+                                  overflowY: 'auto',
+                                  margin: '2px 0 0'
+                                }}>
+                                  {s.agent_response}
+                                </pre>
+                              </div>
+                            )}
+
+                            {/* Guardrail Triggered Indicator */}
+                            {s.guardrail_triggered && (
+                              <div className="da-alert warning" style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', fontSize: '0.75rem' }}>
+                                <AlertTriangle size={12} /> <strong>Guardrail Intercepted:</strong> {s.guardrail_reason || 'Policy rule triggered'}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
