@@ -4,7 +4,7 @@ import { fetchPullRequests, fetchPullRequest, fetchAuditLogs, downloadPREvidence
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import PRConversationSection from '../../components/PRConversationSection';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { GitPullRequest, ClipboardList, AlertTriangle, X, Download, FileText, RefreshCw } from 'lucide-react';
+import { GitPullRequest, ClipboardList, AlertTriangle, X, Download, FileText, RefreshCw, ExternalLink } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const PR_STATUS_CLASS = { open: 'open', merged: 'merged', rejected: 'rejected', closed: 'todo' };
@@ -134,60 +134,121 @@ export default function LeadDashboard() {
               )}
             </div>
 
-            {/* PR Detail Panel */}
+            {/* PR Detail Modal Popup */}
             {selectedPR && (
-              <div className="da-section" style={{ position: 'sticky', top: '1.5rem', alignSelf: 'start', maxHeight: 'calc(100vh - 8rem)', overflowY: 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div className="da-section-title">PR Details</div>
-                  <button className="da-btn da-btn-ghost" onClick={() => setSelectedPR(null)}><X size={16} /></button>
-                </div>
-
-                {detailLoading ? (
-                  <LoadingSpinner text="Loading PR details…" size="md" />
-                ) : (
-                  <div>
-                    <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem' }}>{selectedPR.pr_title || selectedPR.branch_name}</h3>
-                    <div style={{ marginBottom: '1.5rem' }}><span className={`da-badge ${PR_STATUS_CLASS[selectedPR.pr_status]}`}>{selectedPR.pr_status}</span></div>
-
-                    <div className="da-form-group">
-                      <label>Description</label>
-                      <div style={{ background: 'var(--da-surface-2, #FFF7F2)', padding: '0.85rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-border)', fontSize: '0.85rem', color: 'var(--da-text)', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
-                        {selectedPR.pr_body || 'No description provided.'}
-                      </div>
+              <div 
+                style={{
+                  position: 'fixed',
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.65)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '1.5rem'
+                }}
+                onClick={() => setSelectedPR(null)}
+              >
+                <div 
+                  style={{
+                    background: 'var(--da-surface)',
+                    border: '1px solid var(--da-border)',
+                    borderRadius: 'var(--da-radius)',
+                    width: '100%',
+                    maxWidth: '850px',
+                    maxHeight: '88vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+                    overflow: 'hidden'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Modal Header */}
+                  <div style={{
+                    padding: '1rem 1.25rem',
+                    borderBottom: '1px solid var(--da-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'var(--da-surface-2)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--da-text)' }}>
+                        {selectedPR.pr_title || selectedPR.branch_name}
+                      </h3>
+                      <span className={`da-badge ${PR_STATUS_CLASS[selectedPR.pr_status]}`}>{selectedPR.pr_status}</span>
                     </div>
-
-                    {/* Live GitHub PR Conversation & Reviews Timeline */}
-                    <PRConversationSection
-                      prId={selectedPR.id}
-                      prNumber={selectedPR.pr_number}
-                      prUrl={selectedPR.pr_url}
-                      cachedSummary={selectedPR.pr_summary}
-                    />
-
-                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {selectedPR.pr_url && (
-                        <a href={selectedPR.pr_url} target="_blank" rel="noreferrer" className="da-btn da-btn-outline" style={{ flex: 1, textAlign: 'center' }}>
-                          View on GitHub ↗
-                        </a>
-                      )}
-                      <button
-                        onClick={() => handleDownloadEvidence(selectedPR.id)}
-                        disabled={downloadingEvidence}
-                        className="da-btn da-btn-outline"
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#FF5A14', borderColor: 'rgba(255,90,20,0.4)', background: 'rgba(255,90,20,0.06)' }}
-                        title="Download PR evidence report JSON"
-                      >
-                        {downloadingEvidence ? (
-                          <RefreshCw size={14} className="animate-spin" />
-                        ) : (
-                          <Download size={14} />
-                        )}
-                        Download Evidence
-                      </button>
-                    </div>
-
+                    <button className="da-btn da-btn-ghost" onClick={() => setSelectedPR(null)} style={{ padding: '4px' }}>
+                      <X size={18} />
+                    </button>
                   </div>
-                )}
+
+                  {/* Modal Body */}
+                  <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1 }}>
+                    {detailLoading ? (
+                      <LoadingSpinner text="Loading PR details…" size="md" />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div className="da-form-group" style={{ margin: 0 }}>
+                          <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--da-muted)', marginBottom: '6px', display: 'block' }}>
+                            PR Description
+                          </label>
+                          <div style={{ 
+                            background: 'var(--da-surface-2, #FFF7F2)', 
+                            padding: '0.85rem', 
+                            borderRadius: 'var(--da-radius-sm)', 
+                            border: '1px solid var(--da-border)', 
+                            fontSize: '0.85rem', 
+                            color: 'var(--da-text)', 
+                            whiteSpace: 'pre-wrap', 
+                            maxHeight: '220px', 
+                            overflowY: 'auto' 
+                          }}>
+                            {selectedPR.pr_body || 'No description provided.'}
+                          </div>
+                        </div>
+
+                        {/* Live GitHub PR Conversation & Reviews Timeline */}
+                        <PRConversationSection
+                          prId={selectedPR.id}
+                          prNumber={selectedPR.pr_number}
+                          prUrl={selectedPR.pr_url}
+                          cachedSummary={selectedPR.pr_summary}
+                        />
+
+                        {/* Modal Action Footer */}
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                          {selectedPR.pr_url && (
+                            <a 
+                              href={selectedPR.pr_url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="da-btn da-btn-outline" 
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1, fontSize: '0.82rem' }}
+                            >
+                              <ExternalLink size={14} /> View on GitHub
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleDownloadEvidence(selectedPR.id)}
+                            disabled={downloadingEvidence}
+                            className="da-btn da-btn-outline"
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1, fontSize: '0.82rem', color: 'var(--da-accent)', borderColor: 'var(--da-border-orange)', background: 'rgba(255,90,20,0.08)' }}
+                            title="Download PR evidence report JSON"
+                          >
+                            {downloadingEvidence ? (
+                              <RefreshCw size={14} className="animate-spin" />
+                            ) : (
+                              <Download size={14} />
+                            )}
+                            Download Evidence Report
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
