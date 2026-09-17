@@ -885,7 +885,7 @@ export default function PODashboard() {
                                   {details.priority || 'Medium'}
                                 </span>
                                 {details.story_points && (
-                                  <span style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#475569', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  <span style={{ fontSize: '0.72rem', background: 'var(--da-surface-2)', color: 'var(--da-text)', padding: '1px 6px', borderRadius: '4px', fontWeight: 600, border: '1px solid var(--da-border)' }}>
                                     {details.story_points} pts
                                   </span>
                                 )}
@@ -893,20 +893,20 @@ export default function PODashboard() {
                             </td>
                             <td>
                               {details.external_assignee ? (
-                                <span style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 500 }}>
+                                <span style={{ fontSize: '0.82rem', color: 'var(--da-text)', fontWeight: 600 }}>
                                   {details.external_assignee}
                                 </span>
                               ) : (
-                                <span style={{ color: '#999', fontSize: '0.8rem' }}>Unassigned</span>
+                                <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>Unassigned</span>
                               )}
                             </td>
                             <td>
                               {details.due_date ? (
-                                <span style={{ fontSize: '0.8rem', color: '#475569' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--da-text)', fontWeight: 500 }}>
                                   {details.due_date}
                                 </span>
                               ) : (
-                                <span style={{ color: '#999', fontSize: '0.8rem' }}>-</span>
+                                <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>-</span>
                               )}
                             </td>
                             <td>
@@ -2243,8 +2243,8 @@ export default function PODashboard() {
                             fontSize: '0.72rem',
                             borderRadius: '4px',
                             border: String(editFormData.story_points) === pts ? '1px solid var(--da-accent)' : '1px solid var(--da-border)',
-                            background: String(editFormData.story_points) === pts ? 'rgba(255, 90, 20, 0.12)' : '#fff',
-                            color: String(editFormData.story_points) === pts ? 'var(--da-accent)' : '#475569',
+                            background: String(editFormData.story_points) === pts ? 'rgba(255, 90, 20, 0.12)' : 'var(--da-surface-2)',
+                            color: String(editFormData.story_points) === pts ? 'var(--da-accent)' : 'var(--da-text)',
                             cursor: 'pointer',
                             fontWeight: 600
                           }}
