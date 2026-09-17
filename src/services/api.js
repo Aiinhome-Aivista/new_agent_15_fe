@@ -23,19 +23,19 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ── Workflows (existing) ──────────────────────────────────────────────────────
-export const fetchWorkflows = async () => {
-  const r = await apiClient.get('/api/workflows/');
-  return r.data;
-};
-export const fetchWorkflowDetails = async (id) => {
-  const r = await apiClient.get(`/api/workflows/${id}`);
-  return r.data;
-};
-export const initiateWorkflow = async (payload) => {
-  const r = await apiClient.post('/api/workflows/initiate', payload);
-  return r.data;
-};
+// ── Workflows (Standalone - Commented out) ───────────────────────────────────
+// export const fetchWorkflows = async () => {
+//   const r = await apiClient.get('/api/workflows/');
+//   return r.data;
+// };
+// export const fetchWorkflowDetails = async (id) => {
+//   const r = await apiClient.get(`/api/workflows/${id}`);
+//   return r.data;
+// };
+// export const initiateWorkflow = async (payload) => {
+//   const r = await apiClient.post('/api/workflows/initiate', payload);
+//   return r.data;
+// };
 
 // ── Stories ───────────────────────────────────────────────────────────────────
 export const fetchStories = async () => {

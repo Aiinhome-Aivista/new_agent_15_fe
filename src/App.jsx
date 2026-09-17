@@ -95,8 +95,8 @@ function App() {
               </RoleRoute>
             } />
 
-            {/* ── Shared protected pages ── */}
-            <Route element={<AppLayout />}>
+            {/* ── Shared protected pages (Standalone Workflows Disabled) ── */}
+            {/* <Route element={<AppLayout />}>
               <Route path="/workflows/new" element={
                 <RoleRoute allowedRoles={['Product Owner', 'Admin']}>
                   <NewWorkflow />
@@ -107,7 +107,7 @@ function App() {
                   <WorkflowDetail />
                 </RoleRoute>
               } />
-            </Route>
+            </Route> */}
 
             {/* ── Misc ── */}
             <Route path="/unauthorized" element={

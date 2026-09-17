@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
-import { fetchWorkflowDetails } from '../services/api';
+// import { fetchWorkflowDetails } from '../services/api';
 
 export const WorkflowDetail = () => {
   const { id } = useParams();
