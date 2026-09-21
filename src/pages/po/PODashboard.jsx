@@ -1959,6 +1959,25 @@ export default function PODashboard() {
               )}
             </div>
 
+            {selectedStory.reference_repo_url && (
+              <div style={{ marginTop: '1rem', padding: '12px 16px', background: 'rgba(99, 102, 241, 0.08)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <BookOpen size={16} style={{ color: '#818cf8' }} />
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#818cf8', letterSpacing: '0.02em' }}>
+                    REFERENCE GIT KNOWLEDGE BASE ACTIVE
+                  </span>
+                </div>
+                <a href={selectedStory.reference_repo_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#a5b4fc', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', wordBreak: 'break-all' }}>
+                  {selectedStory.reference_repo_url} <ExternalLink size={13} />
+                </a>
+                {selectedStory.reference_repo_metadata?.indexed_functions > 0 && (
+                  <div style={{ fontSize: '0.78rem', color: '#c7d2fe', marginTop: '6px', fontWeight: 500 }}>
+                    📚 <strong>{selectedStory.reference_repo_metadata.indexed_functions}</strong> AST function blueprints harvested & indexed in ChromaDB collection <code>{selectedStory.reference_repo_metadata.collection_name}</code>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Scrollable Description Body */}
             <div style={{
               padding: '1.5rem',
