@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchQAQueue, fetchQAApproved, submitQADecision, downloadStoryEvidenceBlob } from '../../services/api';
+import { fetchQAQueue, fetchQAApproved, submitQADecision, downloadStoryEvidenceBlob, resyncQAStory } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
@@ -116,6 +116,10 @@ export default function QADashboard() {
   const [evidenceModalStory, setEvidenceModalStory] = useState(null);
   const [downloadingEvidencePdf, setDownloadingEvidencePdf] = useState(false);
 
+  // Merge conflict & re-sync state
+  const [conflictData, setConflictData] = useState(null);
+  const [resyncing, setResyncing] = useState(false);
+
   const handleQuickDownloadPdf = async (e, story) => {
     if (e && e.stopPropagation) e.stopPropagation();
     if (!story) return;
@@ -184,12 +188,33 @@ export default function QADashboard() {
       await submitQADecision(story.id, 'approved', 'Approved by QA Reviewer');
       setSuccess(`"${story.title}" approved and merged. Story marked DONE.`);
       setSelected(null);
+      setConflictData(null);
       loadQueue();
       loadApproved();
     } catch (e) {
-      setError(e.response?.data?.error || 'Approval failed.');
+      const errRes = e.response?.data;
+      if (errRes && (e.response?.status === 409 || errRes.can_resync)) {
+        setConflictData(errRes);
+      }
+      setError(errRes?.error || 'Approval failed.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleResync(story) {
+    setResyncing(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await resyncQAStory(story.id);
+      setSuccess(res.message || 'Feature branch re-synced successfully with base branch. You can now retry Approve & Merge.');
+      setConflictData(null);
+      loadQueue();
+    } catch (e) {
+      setError(e.response?.data?.error || 'Re-sync failed. Please click Reject (Rework) to return the story to developer.');
+    } finally {
+      setResyncing(false);
     }
   }
 
@@ -352,7 +377,7 @@ export default function QADashboard() {
                       {queue.map(story => (
                         <tr 
                           key={story.id} 
-                          onClick={() => setSelected(story)} 
+                          onClick={() => { setSelected(story); setConflictData(null); }} 
                           style={{ cursor: 'pointer', background: selected?.id === story.id ? 'var(--da-bg-elevated)' : '' }}
                         >
                           <td style={{ maxWidth: 220 }}>
@@ -365,7 +390,7 @@ export default function QADashboard() {
                           </td>
                           <td>
                             <code style={{ fontSize: '0.75rem', color: 'var(--da-muted)' }}>
-                              {story.current_branch || story.source_branch || 'main'}
+                              {story.pr?.branch_name || story.current_branch || story.source_branch || 'main'}
                             </code>
                           </td>
                           <td>
@@ -388,7 +413,7 @@ export default function QADashboard() {
                             <button 
                               className="da-btn da-btn-primary" 
                               style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }} 
-                              onClick={(e) => { e.stopPropagation(); setSelected(story); }}
+                              onClick={(e) => { e.stopPropagation(); setSelected(story); setConflictData(null); }}
                             >
                               Review
                             </button>
@@ -431,7 +456,10 @@ export default function QADashboard() {
                   <div style={{ marginBottom: '1.25rem' }}>
                     <div className="da-alert info" style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
-                        <strong>PR is ready for review:</strong><br />
+                        <strong>PR is ready for review:</strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--da-muted)', margin: '2px 0 4px 0' }}>
+                          Branch: <code style={{ color: 'var(--da-accent)', fontWeight: 600 }}>{selected.pr.branch_name}</code>
+                        </div>
                         <a href={selected.pr.pr_url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-accent, #FF5A14)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
                           {selected.pr.pr_url} <ExternalLink size={12} />
                         </a>
@@ -459,6 +487,35 @@ export default function QADashboard() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Conflict Detected Banner with Re-sync action */}
+                    {conflictData && conflictData.story_id === selected.id && (
+                      <div style={{ 
+                        background: 'rgba(239, 68, 68, 0.08)', 
+                        border: '1px solid rgba(239, 68, 68, 0.3)', 
+                        borderRadius: '6px', 
+                        padding: '0.85rem', 
+                        marginBottom: '0.75rem' 
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--da-danger)', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                          <AlertTriangle size={16} /> Merge Conflict Detected
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--da-text-secondary)', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                          {conflictData.details || 'This PR cannot be merged into the base branch due to merge conflicts or branch protection.'}
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            type="button"
+                            className="da-btn da-btn-outline" 
+                            onClick={() => handleResync(selected)} 
+                            disabled={resyncing}
+                            style={{ fontSize: '0.78rem', padding: '5px 12px', borderColor: 'var(--da-accent)', color: 'var(--da-accent)', background: 'rgba(255, 90, 20, 0.08)' }}
+                          >
+                            <RefreshCw size={13} className={resyncing ? 'animate-spin' : ''} /> {resyncing ? 'Re-syncing with base...' : 'Re-sync with Base Branch'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* GitHub PR Conversation Timeline */}
                     <PRConversationSection

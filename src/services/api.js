@@ -117,6 +117,10 @@ export const triggerRework = async (storyId) => {
   const r = await apiClient.post(`/api/qa/${storyId}/rework`);
   return r.data;
 };
+export const resyncQAStory = async (storyId) => {
+  const r = await apiClient.post(`/api/qa/${storyId}/resync`);
+  return r.data;
+};
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const fetchAdminMetrics = async () => {
