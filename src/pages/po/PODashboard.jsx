@@ -374,10 +374,18 @@ export default function PODashboard() {
     setSyncing(true);
     try {
       const projKey = formData.project_key || connectorStatus?.project || undefined;
-      await syncTasks(projKey);
+      const res = await syncTasks(projKey);
       setLastSynced(new Date());
       if (!silent) {
-        await showAlert('Sync completed successfully!');
+        let msg = 'Sync completed successfully!';
+        if (res) {
+          const parts = [];
+          if (res.stories_created) parts.push(`${res.stories_created} created`);
+          if (res.stories_updated) parts.push(`${res.stories_updated} updated`);
+          if (res.stories_deleted) parts.push(`${res.stories_deleted} deleted`);
+          if (parts.length > 0) msg += ` (${parts.join(', ')})`;
+        }
+        await showAlert(msg);
       }
       await loadData();
       if (activeTab === 'connectors') {
