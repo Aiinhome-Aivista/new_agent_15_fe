@@ -47,17 +47,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/auth/logout', {}, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+  const logout = () => {
+    const token = localStorage.getItem('token');
+    // Immediate optimistic client-side cleanup for instantaneous 0ms logout response
+    clearAllStorage();
+    setUser(null);
+
+    // Asynchronous background notification (fire-and-forget, non-blocking)
+    if (token) {
+      axios.post('/api/auth/logout', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 2000
+      }).catch(() => {
+        // Ignore background logout errors
       });
-    } catch (e) {
-      // Ignore errors on logout
-    } finally {
-      clearAllStorage();
-      setUser(null);
     }
   };
 

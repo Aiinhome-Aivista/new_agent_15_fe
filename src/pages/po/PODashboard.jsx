@@ -291,11 +291,7 @@ export default function PODashboard() {
 
 
   useEffect(() => {
-    // Initial sync, load stories & connector status
-    performSync(true);
-    loadConnectorStatus();
-
-    // Call sync API at duration specified in .env (10 min duration)
+    // Periodic background sync interval as configured in .env (default 10 mins)
     const interval = setInterval(() => {
       performSync(true);
     }, syncIntervalMs);
@@ -326,7 +322,10 @@ export default function PODashboard() {
     }
   }
 
-  async function loadJiraResources(projectKey = '') {
+  async function loadJiraResources(projectKey = '', force = false) {
+    if (!force && jiraProjects.length > 0 && (!projectKey || projectKey === formData.project_key)) {
+      return;
+    }
     try {
       setResourcesLoading(true);
       const res = await fetchJiraResources(projectKey);
@@ -356,7 +355,7 @@ export default function PODashboard() {
     } else {
       setProjectInputMode('select');
       setFormData(prev => ({ ...prev, project_key: newProjKey }));
-      loadJiraResources(newProjKey);
+      loadJiraResources(newProjKey, true);
     }
   };
 
