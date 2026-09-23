@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   fetchStories, 
   fetchConnectorStatus,
@@ -20,7 +20,7 @@ import {
   RefreshCw, Play, BookOpen, Plug, Plus, LayoutDashboard, FileText, X, User,
   Paperclip, UploadCloud, File, Trash2, Tag, Calendar, Hash, CheckCircle2,
   Edit3, Filter, Lock, Search, Sparkles, ExternalLink, AlertTriangle, RotateCcw,
-  GitBranch, GitPullRequest, Download
+  GitBranch, GitPullRequest, Download, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 
@@ -203,6 +203,12 @@ export default function PODashboard() {
   // Table filter state: 'all' | 'devaa' | 'todo' | 'inprogress' | 'done'
   const [tableFilter, setTableFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset pagination to page 1 whenever filter or search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tableFilter, searchQuery]);
 
   // Helper to determine if story was created in DEVAA (e.g. by PO and pushed to Jira)
   const isDevaaStory = (story) => {
@@ -610,6 +616,38 @@ export default function PODashboard() {
     'done': stories.filter(s => (s.status || '').toLowerCase().replace(/[-_ ]/g, '') === 'done').length
   };
 
+  // 4 rows per page (header makes it 5 rows total in table)
+  const ITEMS_PER_PAGE = 4;
+
+  const filteredStories = useMemo(() => {
+    return stories.filter(story => {
+      const normStatus = (story.status || '').toLowerCase().replace(/[-_ ]/g, '');
+      if (tableFilter === 'todo' && !(normStatus === 'todo' || normStatus === 'open')) return false;
+      if (tableFilter === 'devaa' && !isDevaaStory(story)) return false;
+      if (tableFilter === 'inprogress' && !['inprogress', 'in_progress'].includes(normStatus)) return false;
+      if (tableFilter === 'done' && normStatus !== 'done') return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const details = story.repository_details?.[0] || {};
+        const matchTitle = (story.title || '').toLowerCase().includes(q);
+        const matchKey = (story.jira_story_key || '').toLowerCase().includes(q);
+        const matchAssignee = (details.external_assignee || '').toLowerCase().includes(q);
+        const matchLabels = (details.labels || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchKey && !matchAssignee && !matchLabels) return false;
+      }
+      return true;
+    });
+  }, [stories, tableFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStories.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedStories = useMemo(() => {
+    const startIdx = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+    return filteredStories.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+  }, [filteredStories, safeCurrentPage]);
+
 
   const TABS = [
     { id: 'dashboard', label: <><LayoutDashboard size={16} /> Dashboard</> },
@@ -810,26 +848,16 @@ export default function PODashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stories
-                      .filter(story => {
-                        const normStatus = (story.status || '').toLowerCase().replace(/[-_ ]/g, '');
-                        if (tableFilter === 'todo' && !(normStatus === 'todo' || normStatus === 'open')) return false;
-                        if (tableFilter === 'devaa' && !isDevaaStory(story)) return false;
-                        if (tableFilter === 'inprogress' && !['inprogress', 'in_progress'].includes(normStatus)) return false;
-                        if (tableFilter === 'done' && normStatus !== 'done') return false;
-
-                        if (searchQuery.trim()) {
-                          const q = searchQuery.toLowerCase().trim();
-                          const details = story.repository_details?.[0] || {};
-                          const matchTitle = (story.title || '').toLowerCase().includes(q);
-                          const matchKey = (story.jira_story_key || '').toLowerCase().includes(q);
-                          const matchAssignee = (details.external_assignee || '').toLowerCase().includes(q);
-                          const matchLabels = (details.labels || '').toLowerCase().includes(q);
-                          if (!matchTitle && !matchKey && !matchAssignee && !matchLabels) return false;
-                        }
-                        return true;
-                      })
-                      .map(story => {
+                    {filteredStories.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--da-muted)' }}>
+                          <FileText size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.4, display: 'block' }} />
+                          <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--da-text)' }}>No stories found</div>
+                          <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>No stories match the selected filter or search query.</div>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedStories.map(story => {
                         const normStatus = (story.status || '').toLowerCase().replace(/[-_ ]/g, '');
                         const isTodo = normStatus === 'todo' || normStatus === 'open';
                         const details = story.repository_details?.[0] || {};
@@ -1131,10 +1159,119 @@ export default function PODashboard() {
                           </td>
                           </tr>
                         );
-                      })}
+                      }))}
                   </tbody>
-
                 </table>
+
+                {/* ── ROUNDED PAGINATION (4 rows per page + header = 5 rows total) ── */}
+                {filteredStories.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.9rem 1.25rem',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    borderTop: '1px solid var(--da-border)',
+                    background: 'var(--da-surface)',
+                    borderBottomLeftRadius: 'var(--da-radius)',
+                    borderBottomRightRadius: 'var(--da-radius)',
+                    fontSize: '0.82rem',
+                    color: 'var(--da-muted)'
+                  }}>
+                    <div>
+                      Showing <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+                        {Math.min((safeCurrentPage - 1) * ITEMS_PER_PAGE + 1, filteredStories.length)}
+                      </span> to <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+                        {Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredStories.length)}
+                      </span> of <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+                        {filteredStories.length}
+                      </span> stories
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {/* Prev Button */}
+                        <button
+                          type="button"
+                          className="da-btn"
+                          disabled={safeCurrentPage === 1}
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          style={{
+                            borderRadius: '24px',
+                            padding: '0.35rem 0.85rem',
+                            fontSize: '0.78rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'var(--da-surface-2)',
+                            border: '1px solid var(--da-border)',
+                            color: safeCurrentPage === 1 ? 'var(--da-muted)' : 'var(--da-text)',
+                            cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                            opacity: safeCurrentPage === 1 ? 0.45 : 1,
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <ChevronLeft size={14} /> Prev
+                        </button>
+
+                        {/* Circular Page Numbers */}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
+                          const isActive = pageNum === safeCurrentPage;
+                          return (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setCurrentPage(pageNum)}
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.82rem',
+                                fontWeight: isActive ? 700 : 500,
+                                border: isActive ? '1px solid var(--da-accent, #FF5A14)' : '1px solid var(--da-border)',
+                                background: isActive ? 'var(--da-accent, #FF5A14)' : 'var(--da-surface-2)',
+                                color: isActive ? '#FFFFFF' : 'var(--da-text)',
+                                cursor: 'pointer',
+                                boxShadow: isActive ? '0 2px 8px rgba(255, 90, 20, 0.35)' : 'none',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+
+                        {/* Next Button */}
+                        <button
+                          type="button"
+                          className="da-btn"
+                          disabled={safeCurrentPage === totalPages}
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          style={{
+                            borderRadius: '24px',
+                            padding: '0.35rem 0.85rem',
+                            fontSize: '0.78rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'var(--da-surface-2)',
+                            border: '1px solid var(--da-border)',
+                            color: safeCurrentPage === totalPages ? 'var(--da-muted)' : 'var(--da-text)',
+                            cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer',
+                            opacity: safeCurrentPage === totalPages ? 0.45 : 1,
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          Next <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
