@@ -107,6 +107,10 @@ export default function QADashboard() {
   // Reject modal state
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
+
+  // Approve modal state
+  const [approveModal, setApproveModal] = useState(false);
+  const [approveComment, setApproveComment] = useState('Approved by QA Reviewer — verified all acceptance criteria.');
   const [submitting, setSubmitting] = useState(false);
 
   // Pipeline logs modal state
@@ -175,19 +179,16 @@ export default function QADashboard() {
     }
   }
 
-  async function handleApprove(story) {
-    const confirmed = await showConfirm(
-      `Approve and merge PR for story: "${story.title}"?\n\nThis action is irreversible — the story will be marked DONE.`
-    );
-    if (!confirmed) return;
-
+  async function handleApproveSubmit(story) {
     setSubmitting(true);
     setError(null);
     setSuccess(null);
     try {
-      await submitQADecision(story.id, 'approved', 'Approved by QA Reviewer');
+      const commentToSend = approveComment.trim() || 'Approved by QA Reviewer — verified all acceptance criteria.';
+      await submitQADecision(story.id, 'approved', commentToSend);
       setSuccess(`"${story.title}" approved and merged. Story marked DONE.`);
       setSelected(null);
+      setApproveModal(false);
       setConflictData(null);
       loadQueue();
       loadApproved();
@@ -546,21 +547,65 @@ export default function QADashboard() {
                     />
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                       <button className="da-btn da-btn-ghost" onClick={() => setRejectModal(false)} disabled={submitting}>Cancel</button>
-                      <button className="da-btn da-btn-danger" onClick={() => handleRejectSubmit(selected)} disabled={submitting}>Confirm Reject</button>
+                      <button className="da-btn da-btn-danger" onClick={() => handleRejectSubmit(selected)} disabled={submitting}>
+                        {submitting ? (
+                          <><RefreshCw size={14} className="lucide-animated-spin" /> Rejecting...</>
+                        ) : (
+                          'Confirm Reject'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : approveModal ? (
+                  <div style={{ background: 'var(--da-surface-2)', padding: '1rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-success)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.5rem', color: 'var(--da-success)', fontWeight: 700, fontSize: '0.9rem' }}>
+                      <CheckCircle2 size={18} /> Approve & Merge PR #{selected.pr?.pr_number}
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--da-muted)', margin: '0 0 0.75rem 0' }}>
+                      This will squash-merge the feature branch into base branch on GitHub, mark the story as DONE, and transition Jira to Done.
+                    </p>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--da-muted)', marginBottom: '0.4rem', display: 'block', fontWeight: 600 }}>
+                      QA Approval Comments (optional):
+                    </label>
+                    <textarea 
+                      value={approveComment} 
+                      onChange={e => setApproveComment(e.target.value)} 
+                      rows={3} 
+                      style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: 'var(--da-text)', padding: '0.5rem', borderRadius: '4px' }} 
+                      placeholder="e.g., Verified acceptance criteria AC1-AC6, automated tests passing."
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      <button className="da-btn da-btn-ghost" onClick={() => setApproveModal(false)} disabled={submitting}>Cancel</button>
+                      <button 
+                        className="da-btn da-btn-primary" 
+                        style={{ background: 'var(--da-success)', borderColor: 'var(--da-success)', color: '#fff' }} 
+                        onClick={() => handleApproveSubmit(selected)} 
+                        disabled={submitting}
+                      >
+                        {submitting ? (
+                          <><RefreshCw size={14} className="lucide-animated-spin" /> Merging & Approving...</>
+                        ) : (
+                          <><Check size={16} /> Confirm Approve & Merge</>
+                        )}
+                      </button>
                     </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
-                    <button className="da-btn da-btn-danger" style={{ flex: 1 }} onClick={() => setRejectModal(true)} disabled={submitting}>
+                    <button className="da-btn da-btn-danger" style={{ flex: 1 }} onClick={() => { setRejectModal(true); setApproveModal(false); }} disabled={submitting}>
                       <X size={16} /> Reject (Rework)
                     </button>
                     <button 
                       className="da-btn da-btn-primary" 
                       style={{ flex: 1, background: 'var(--da-success)', borderColor: 'var(--da-success)', color: '#fff' }} 
-                      onClick={() => handleApprove(selected)} 
+                      onClick={() => { setApproveModal(true); setRejectModal(false); }} 
                       disabled={submitting || !selected.pr}
                     >
-                      <Check size={16} /> Approve & Merge
+                      {submitting ? (
+                        <><RefreshCw size={16} className="lucide-animated-spin" /> Processing...</>
+                      ) : (
+                        <><Check size={16} /> Approve & Merge</>
+                      )}
                     </button>
                   </div>
                 )}
