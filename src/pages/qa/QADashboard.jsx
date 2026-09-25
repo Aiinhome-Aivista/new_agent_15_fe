@@ -334,7 +334,8 @@ export default function QADashboard() {
 
         {/* ── TAB 1: QA QUEUE ── */}
         {tab === 'queue' && (
-          <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 440px' : '1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+          <>
+          <div style={{ marginTop: '1.5rem' }}>
             <div className="da-section">
               <div className="da-section-header">
                 <span className="da-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -367,251 +368,476 @@ export default function QADashboard() {
                   <table className="da-table">
                     <thead>
                       <tr>
-                        <th>Story</th>
+                        <th style={{ minWidth: '240px' }}>Story</th>
                         <th>Branch</th>
-                        <th>PR</th>
+                        <th>Pull Request</th>
+                        <th>Priority</th>
                         <th>Iteration</th>
-                        <th>Actions</th>
+                        <th style={{ textAlign: 'right', minWidth: '120px' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {queue.map(story => (
-                        <tr 
-                          key={story.id} 
-                          onClick={() => { setSelected(story); setConflictData(null); }} 
-                          style={{ cursor: 'pointer', background: selected?.id === story.id ? 'var(--da-bg-elevated)' : '' }}
-                        >
-                          <td style={{ maxWidth: 220 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{story.title}</div>
-                            {story.jira_story_key && (
-                              <span className="da-badge default" style={{ fontSize: '0.7rem', marginTop: '4px', display: 'inline-block' }}>
-                                {story.jira_story_key}
+                      {queue.map(story => {
+                        const jiraKey = story.jira_story_key;
+                        const branch = story.pr?.branch_name || story.current_branch || story.source_branch || 'main';
+                        const priority = story.priority || (story.repository_details && story.repository_details[0]?.priority) || 'Medium';
+                        const priorityColor = priority === 'Highest' || priority === 'Critical' ? 'var(--da-danger)' :
+                                              priority === 'High' ? '#f59e0b' :
+                                              priority === 'Low' || priority === 'Lowest' ? 'var(--da-muted)' : 'var(--da-accent)';
+
+                        return (
+                          <tr 
+                            key={story.id}
+                            style={{ cursor: 'pointer', transition: 'background 0.15s ease' }}
+                            onClick={() => { setSelected(story); setConflictData(null); }}
+                          >
+                            {/* Story Info */}
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  {jiraKey && (
+                                    <span 
+                                      className="da-badge" 
+                                      style={{ 
+                                        background: 'rgba(255, 90, 20, 0.1)', 
+                                        color: 'var(--da-accent)', 
+                                        border: '1px solid var(--da-border-orange)', 
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700 
+                                      }}
+                                    >
+                                      {jiraKey}
+                                    </span>
+                                  )}
+                                  <span 
+                                    className="da-badge" 
+                                    style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#d97706', fontSize: '0.68rem', fontWeight: 600 }}
+                                  >
+                                    AWAITING QA
+                                  </span>
+                                </div>
+                                <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--da-text)' }}>
+                                  {story.title}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Branch */}
+                            <td>
+                              <code style={{ 
+                                fontSize: '0.75rem', 
+                                background: 'var(--da-surface-2)', 
+                                padding: '2px 6px', 
+                                borderRadius: '4px',
+                                border: '1px solid var(--da-border)',
+                                color: 'var(--da-accent)'
+                              }}>
+                                <GitBranch size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
+                                {branch}
+                              </code>
+                            </td>
+
+                            {/* Pull Request */}
+                            <td>
+                              {story.pr ? (
+                                <a 
+                                  href={story.pr.pr_url} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  style={{ 
+                                    color: 'var(--da-accent)', 
+                                    fontWeight: 600, 
+                                    fontSize: '0.8rem', 
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <GitPullRequest size={13} />
+                                  {story.pr.pr_number ? `#${story.pr.pr_number}` : 'View PR'} <ExternalLink size={11} />
+                                </a>
+                              ) : (
+                                <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>—</span>
+                              )}
+                            </td>
+
+                            {/* Priority */}
+                            <td>
+                              <span className="da-badge" style={{ background: `${priorityColor}18`, color: priorityColor, fontSize: '0.72rem', fontWeight: 600 }}>
+                                {priority}
                               </span>
-                            )}
-                          </td>
-                          <td>
-                            <code style={{ fontSize: '0.75rem', color: 'var(--da-muted)' }}>
-                              {story.pr?.branch_name || story.current_branch || story.source_branch || 'main'}
-                            </code>
-                          </td>
-                          <td>
-                            {story.pr ? (
-                              <a 
-                                href={story.pr.pr_url} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                style={{ color: 'var(--da-primary)', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }} 
-                                onClick={e => e.stopPropagation()}
+                            </td>
+
+                            {/* Iteration */}
+                            <td><span className="da-badge default">Loop {story.loop_iterations || 1}/3</span></td>
+
+                            {/* Actions */}
+                            <td style={{ textAlign: 'right' }}>
+                              <button 
+                                className="da-btn da-btn-primary" 
+                                style={{ padding: '0.3rem 0.8rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }} 
+                                onClick={(e) => { e.stopPropagation(); setSelected(story); setConflictData(null); }}
                               >
-                                View PR <ExternalLink size={12} />
-                              </a>
-                            ) : (
-                              <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>-</span>
-                            )}
-                          </td>
-                          <td><span className="da-badge default">Loop {story.loop_iterations || 1}/3</span></td>
-                          <td>
-                            <button 
-                              className="da-btn da-btn-primary" 
-                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }} 
-                              onClick={(e) => { e.stopPropagation(); setSelected(story); setConflictData(null); }}
-                            >
-                              Review
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                                <Eye size={13} /> Review
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )}
             </div>
+          </div>
 
-            {/* QA Detail Panel for Queue */}
-            {selected && (
-              <div className="da-section" style={{ position: 'sticky', top: '1.5rem', alignSelf: 'start' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div className="da-section-title">Review Story</div>
-                  <button className="da-btn da-btn-ghost" onClick={() => setSelected(null)}><X size={16} /></button>
-                </div>
-                
-                <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem' }}>{selected.title}</h3>
-                
-                <div className="da-form-group">
-                  <label style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--da-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'block' }}>
-                    Acceptance Criteria
-                  </label>
-                  <div style={{ 
-                    background: 'var(--da-surface-2, #FFF7F2)', 
-                    padding: '0.85rem', 
-                    borderRadius: 'var(--da-radius-sm)', 
-                    border: '1px solid var(--da-border)',
-                    maxHeight: '380px', 
-                    overflowY: 'auto' 
-                  }}>
-                    {renderAcceptanceCriteria(selected.acceptance_criteria)}
-                  </div>
-                </div>
-
-                {selected.pr ? (
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <div className="da-alert info" style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div>
-                        <strong>PR is ready for review:</strong>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--da-muted)', margin: '2px 0 4px 0' }}>
-                          Branch: <code style={{ color: 'var(--da-accent)', fontWeight: 600 }}>{selected.pr.branch_name}</code>
-                        </div>
-                        <a href={selected.pr.pr_url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-accent, #FF5A14)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                          {selected.pr.pr_url} <ExternalLink size={12} />
-                        </a>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="da-btn da-btn-outline"
-                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', color: '#FF5A14', borderColor: 'rgba(255,90,20,0.4)', background: 'rgba(255,90,20,0.06)' }}
-                          onClick={() => setEvidenceModalStory(selected)}
-                          title="View complete evidence dossier"
-                        >
-                          <FileText size={13} /> View Evidence
-                        </button>
-                        <button
-                          type="button"
-                          className="da-btn da-btn-outline"
-                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', background: 'rgba(56,189,248,0.06)' }}
-                          onClick={(e) => handleQuickDownloadPdf(e, selected)}
-                          disabled={downloadingEvidencePdf}
-                          title="Download Evidence PDF"
-                        >
-                          {downloadingEvidencePdf ? <RefreshCw size={12} className="animate-spin" /> : <Download size={12} />}
-                          PDF
-                        </button>
-                      </div>
+          {/* ── MODAL: QA REVIEW DETAIL ── */}
+          {selected && (
+            <div 
+              className="da-modal-overlay" 
+              onClick={() => { setSelected(null); setRejectModal(false); setApproveModal(false); }}
+              style={{ zIndex: 1000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+            >
+              <div 
+                className="da-modal-content" 
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: 'var(--da-surface)',
+                  borderRadius: 'var(--da-radius)',
+                  maxWidth: '860px',
+                  width: '95%',
+                  maxHeight: '90vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: '0 20px 45px rgba(0,0,0,0.2)',
+                  border: '1px solid var(--da-border-orange)',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Modal Header */}
+                <div style={{
+                  padding: '1.25rem 1.5rem',
+                  borderBottom: '1px solid var(--da-border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  background: 'var(--da-surface-2)'
+                }}>
+                  <div style={{ flex: 1, paddingRight: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                      {selected.jira_story_key && (
+                        <span className="da-badge default" style={{ fontSize: '0.8rem', fontWeight: 700, border: '1px solid var(--da-border)' }}>
+                          {selected.jira_story_key}
+                        </span>
+                      )}
+                      <span 
+                        className="da-badge" 
+                        style={{ 
+                          background: 'rgba(251, 191, 36, 0.15)', 
+                          color: '#d97706', 
+                          border: '1px solid rgba(251, 191, 36, 0.3)', 
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <AlertTriangle size={13} /> AWAITING QA REVIEW
+                      </span>
+                      <span className="da-badge default" style={{ fontSize: '0.68rem' }}>
+                        Loop {selected.loop_iterations || 1}/3
+                      </span>
                     </div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--da-text)', fontWeight: 700 }}>
+                      {selected.title}
+                    </h3>
+                  </div>
+                  <button 
+                    className="da-btn da-btn-ghost" 
+                    onClick={() => { setSelected(null); setRejectModal(false); setApproveModal(false); }}
+                    style={{ padding: '6px 8px', borderRadius: 'var(--da-radius-sm)', color: 'var(--da-muted)' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
 
-                    {/* Conflict Detected Banner with Re-sync action */}
-                    {conflictData && conflictData.story_id === selected.id && (
-                      <div style={{ 
-                        background: 'rgba(239, 68, 68, 0.08)', 
-                        border: '1px solid rgba(239, 68, 68, 0.3)', 
-                        borderRadius: '6px', 
-                        padding: '0.85rem', 
-                        marginBottom: '0.75rem' 
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--da-danger)', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
-                          <AlertTriangle size={16} /> Merge Conflict Detected
-                        </div>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--da-text-secondary)', margin: '0 0 10px 0', lineHeight: 1.4 }}>
-                          {conflictData.details || 'This PR cannot be merged into the base branch due to merge conflicts or branch protection.'}
-                        </p>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button 
-                            type="button"
-                            className="da-btn da-btn-outline" 
-                            onClick={() => handleResync(selected)} 
-                            disabled={resyncing}
-                            style={{ fontSize: '0.78rem', padding: '5px 12px', borderColor: 'var(--da-accent)', color: 'var(--da-accent)', background: 'rgba(255, 90, 20, 0.08)' }}
-                          >
-                            <RefreshCw size={13} className={resyncing ? 'animate-spin' : ''} /> {resyncing ? 'Re-syncing with base...' : 'Re-sync with Base Branch'}
-                          </button>
-                        </div>
-                      </div>
+                {/* Metadata Highlights Bar */}
+                <div style={{
+                  padding: '1rem 1.5rem',
+                  background: 'var(--da-surface-2)',
+                  borderBottom: '1px solid var(--da-border)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '1rem',
+                  fontSize: '0.85rem'
+                }}>
+                  <div>
+                    <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
+                      FEATURE BRANCH
+                    </span>
+                    <code style={{ 
+                      background: 'var(--da-surface-2)', 
+                      padding: '2px 8px', 
+                      borderRadius: '4px', 
+                      color: 'var(--da-accent)', 
+                      border: '1px solid var(--da-border-orange)', 
+                      fontSize: '0.8rem',
+                      fontWeight: 600
+                    }}>
+                      {selected.pr?.branch_name || selected.current_branch || selected.source_branch || 'main'}
+                    </code>
+                  </div>
+
+                  <div>
+                    <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
+                      PULL REQUEST
+                    </span>
+                    {selected.pr?.pr_url ? (
+                      <a 
+                        href={selected.pr.pr_url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <GitPullRequest size={14} /> 
+                        {selected.pr.pr_number ? `#${selected.pr.pr_number}` : 'View PR'} <ExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--da-muted)', fontWeight: 500 }}>No PR yet</span>
                     )}
-
-                    {/* GitHub PR Conversation Timeline */}
-                    <PRConversationSection
-                      prId={selected.pr.id}
-                      prNumber={selected.pr.pr_number}
-                      prUrl={selected.pr.pr_url}
-                      cachedSummary={selected.pr.pr_summary}
-                    />
                   </div>
-                ) : (
-                  <div className="da-alert warning" style={{ marginBottom: '1.5rem' }}>
-                    <strong>No active PR found.</strong> Developer agent might still be running or PR creation failed.
-                  </div>
-                )}
 
-
-                {rejectModal ? (
-                  <div style={{ background: 'var(--da-surface-2)', padding: '1rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-border)' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--da-muted)', marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>
-                      Reason for rejection (sent back to AI agent):
-                    </label>
-                    <textarea 
-                      value={rejectComment} 
-                      onChange={e => setRejectComment(e.target.value)} 
-                      rows={4} 
-                      style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: 'var(--da-text)', padding: '0.5rem', borderRadius: '4px' }} 
-                      placeholder="e.g., The search query is returning wrong results..."
-                    />
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button className="da-btn da-btn-ghost" onClick={() => setRejectModal(false)} disabled={submitting}>Cancel</button>
-                      <button className="da-btn da-btn-danger" onClick={() => handleRejectSubmit(selected)} disabled={submitting}>
-                        {submitting ? (
-                          <><RefreshCw size={14} className="lucide-animated-spin" /> Rejecting...</>
-                        ) : (
-                          'Confirm Reject'
-                        )}
+                  <div>
+                    <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
+                      QUICK ACTIONS
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="da-btn da-btn-outline"
+                        style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', color: '#FF5A14', borderColor: 'rgba(255,90,20,0.4)', background: 'rgba(255,90,20,0.06)' }}
+                        onClick={() => setEvidenceModalStory(selected)}
+                        title="View complete evidence dossier"
+                      >
+                        <FileText size={12} /> Evidence
+                      </button>
+                      <button
+                        type="button"
+                        className="da-btn da-btn-outline"
+                        style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', background: 'rgba(56,189,248,0.06)' }}
+                        onClick={(e) => handleQuickDownloadPdf(e, selected)}
+                        disabled={downloadingEvidencePdf}
+                        title="Download Evidence PDF"
+                      >
+                        {downloadingEvidencePdf ? <RefreshCw size={11} className="animate-spin" /> : <Download size={11} />}
+                        PDF
+                      </button>
+                      <button
+                        type="button"
+                        className="da-btn da-btn-outline"
+                        style={{ fontSize: '0.72rem', padding: '0.2rem 0.5rem', color: 'var(--da-muted)', borderColor: 'var(--da-border)' }}
+                        onClick={() => {
+                          setLogsPanelStory({ id: selected.id, title: selected.title });
+                        }}
+                      >
+                        <Terminal size={11} /> Logs
                       </button>
                     </div>
                   </div>
-                ) : approveModal ? (
-                  <div style={{ background: 'var(--da-surface-2)', padding: '1rem', borderRadius: 'var(--da-radius-sm)', border: '1px solid var(--da-success)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.5rem', color: 'var(--da-success)', fontWeight: 700, fontSize: '0.9rem' }}>
-                      <CheckCircle2 size={18} /> Approve & Merge PR #{selected.pr?.pr_number}
+                </div>
+
+                {/* Scrollable Modal Content */}
+                <div style={{
+                  padding: '1.5rem',
+                  overflowY: 'auto',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.25rem',
+                  background: 'var(--da-surface)'
+                }}>
+                  {/* Acceptance Criteria */}
+                  <div>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--da-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+                      Acceptance Criteria
+                    </h4>
+                    <div style={{ 
+                      background: 'var(--da-surface-2, #FFF7F2)', 
+                      padding: '1rem', 
+                      borderRadius: 'var(--da-radius-sm)', 
+                      border: '1px solid var(--da-border)',
+                      maxHeight: '280px', 
+                      overflowY: 'auto' 
+                    }}>
+                      {renderAcceptanceCriteria(selected.acceptance_criteria)}
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--da-muted)', margin: '0 0 0.75rem 0' }}>
-                      This will squash-merge the feature branch into base branch on GitHub, mark the story as DONE, and transition Jira to Done.
-                    </p>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--da-muted)', marginBottom: '0.4rem', display: 'block', fontWeight: 600 }}>
-                      QA Approval Comments (optional):
-                    </label>
-                    <textarea 
-                      value={approveComment} 
-                      onChange={e => setApproveComment(e.target.value)} 
-                      rows={3} 
-                      style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: 'var(--da-text)', padding: '0.5rem', borderRadius: '4px' }} 
-                      placeholder="e.g., Verified acceptance criteria AC1-AC6, automated tests passing."
-                    />
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      <button className="da-btn da-btn-ghost" onClick={() => setApproveModal(false)} disabled={submitting}>Cancel</button>
+                  </div>
+
+                  {/* Story Description */}
+                  {selected.description && (
+                    <div>
+                      <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--da-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+                        Story Description
+                      </h4>
+                      <div style={{
+                        background: 'var(--da-surface-2)',
+                        padding: '1rem',
+                        borderRadius: 'var(--da-radius-sm)',
+                        border: '1px solid var(--da-border)',
+                        fontSize: '0.88rem',
+                        lineHeight: 1.6,
+                        color: 'var(--da-text)',
+                        whiteSpace: 'pre-wrap',
+                        maxHeight: '150px',
+                        overflowY: 'auto'
+                      }}>
+                        {selected.description}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PR Info & Conversation */}
+                  {selected.pr ? (
+                    <div>
+                      {/* Conflict Detected Banner */}
+                      {conflictData && conflictData.story_id === selected.id && (
+                        <div style={{ 
+                          background: 'rgba(239, 68, 68, 0.08)', 
+                          border: '1px solid rgba(239, 68, 68, 0.3)', 
+                          borderRadius: '6px', 
+                          padding: '0.85rem', 
+                          marginBottom: '0.75rem' 
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--da-danger)', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                            <AlertTriangle size={16} /> Merge Conflict Detected
+                          </div>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--da-text-secondary)', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                            {conflictData.details || 'This PR cannot be merged into the base branch due to merge conflicts or branch protection.'}
+                          </p>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              type="button"
+                              className="da-btn da-btn-outline" 
+                              onClick={() => handleResync(selected)} 
+                              disabled={resyncing}
+                              style={{ fontSize: '0.78rem', padding: '5px 12px', borderColor: 'var(--da-accent)', color: 'var(--da-accent)', background: 'rgba(255, 90, 20, 0.08)' }}
+                            >
+                              <RefreshCw size={13} className={resyncing ? 'animate-spin' : ''} /> {resyncing ? 'Re-syncing with base...' : 'Re-sync with Base Branch'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* GitHub PR Conversation Timeline */}
+                      <PRConversationSection
+                        prId={selected.pr.id}
+                        prNumber={selected.pr.pr_number}
+                        prUrl={selected.pr.pr_url}
+                        cachedSummary={selected.pr.pr_summary}
+                      />
+                    </div>
+                  ) : (
+                    <div className="da-alert warning">
+                      <strong>No active PR found.</strong> Developer agent might still be running or PR creation failed.
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer — Decision Buttons */}
+                <div style={{
+                  padding: '1rem 1.5rem',
+                  borderTop: '1px solid var(--da-border)',
+                  background: 'var(--da-surface-2)',
+                }}>
+                  {rejectModal ? (
+                    <div>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--da-muted)', marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>
+                        Reason for rejection (sent back to AI agent):
+                      </label>
+                      <textarea 
+                        value={rejectComment} 
+                        onChange={e => setRejectComment(e.target.value)} 
+                        rows={4} 
+                        style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: 'var(--da-text)', padding: '0.5rem', borderRadius: '4px', resize: 'vertical' }} 
+                        placeholder="e.g., The search query is returning wrong results..."
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button className="da-btn da-btn-ghost" onClick={() => setRejectModal(false)} disabled={submitting}>Cancel</button>
+                        <button className="da-btn da-btn-danger" onClick={() => handleRejectSubmit(selected)} disabled={submitting}>
+                          {submitting ? (
+                            <><RefreshCw size={14} className="lucide-animated-spin" /> Rejecting...</>
+                          ) : (
+                            'Confirm Reject'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : approveModal ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.5rem', color: 'var(--da-success)', fontWeight: 700, fontSize: '0.9rem' }}>
+                        <CheckCircle2 size={18} /> Approve & Merge PR #{selected.pr?.pr_number}
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--da-muted)', margin: '0 0 0.75rem 0' }}>
+                        This will squash-merge the feature branch into base branch on GitHub, mark the story as DONE, and transition Jira to Done.
+                      </p>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--da-muted)', marginBottom: '0.4rem', display: 'block', fontWeight: 600 }}>
+                        QA Approval Comments (optional):
+                      </label>
+                      <textarea 
+                        value={approveComment} 
+                        onChange={e => setApproveComment(e.target.value)} 
+                        rows={3} 
+                        style={{ width: '100%', marginBottom: '1rem', background: 'var(--da-bg)', border: '1px solid var(--da-border)', color: 'var(--da-text)', padding: '0.5rem', borderRadius: '4px', resize: 'vertical' }} 
+                        placeholder="e.g., Verified acceptance criteria AC1-AC6, automated tests passing."
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button className="da-btn da-btn-ghost" onClick={() => setApproveModal(false)} disabled={submitting}>Cancel</button>
+                        <button 
+                          className="da-btn da-btn-primary" 
+                          style={{ background: 'var(--da-success)', borderColor: 'var(--da-success)', color: '#fff' }} 
+                          onClick={() => handleApproveSubmit(selected)} 
+                          disabled={submitting}
+                        >
+                          {submitting ? (
+                            <><RefreshCw size={14} className="lucide-animated-spin" /> Merging & Approving...</>
+                          ) : (
+                            <><Check size={16} /> Confirm Approve & Merge</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                      <button 
+                        className="da-btn da-btn-ghost" 
+                        onClick={() => { setSelected(null); setRejectModal(false); setApproveModal(false); }}
+                      >
+                        Close
+                      </button>
+                      <button className="da-btn da-btn-danger" onClick={() => { setRejectModal(true); setApproveModal(false); }} disabled={submitting}>
+                        <X size={16} /> Reject (Rework)
+                      </button>
                       <button 
                         className="da-btn da-btn-primary" 
                         style={{ background: 'var(--da-success)', borderColor: 'var(--da-success)', color: '#fff' }} 
-                        onClick={() => handleApproveSubmit(selected)} 
-                        disabled={submitting}
+                        onClick={() => { setApproveModal(true); setRejectModal(false); }} 
+                        disabled={submitting || !selected.pr}
                       >
                         {submitting ? (
-                          <><RefreshCw size={14} className="lucide-animated-spin" /> Merging & Approving...</>
+                          <><RefreshCw size={16} className="lucide-animated-spin" /> Processing...</>
                         ) : (
-                          <><Check size={16} /> Confirm Approve & Merge</>
+                          <><Check size={16} /> Approve & Merge</>
                         )}
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
-                    <button className="da-btn da-btn-danger" style={{ flex: 1 }} onClick={() => { setRejectModal(true); setApproveModal(false); }} disabled={submitting}>
-                      <X size={16} /> Reject (Rework)
-                    </button>
-                    <button 
-                      className="da-btn da-btn-primary" 
-                      style={{ flex: 1, background: 'var(--da-success)', borderColor: 'var(--da-success)', color: '#fff' }} 
-                      onClick={() => { setApproveModal(true); setRejectModal(false); }} 
-                      disabled={submitting || !selected.pr}
-                    >
-                      {submitting ? (
-                        <><RefreshCw size={16} className="lucide-animated-spin" /> Processing...</>
-                      ) : (
-                        <><Check size={16} /> Approve & Merge</>
-                      )}
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          </>
         )}
 
         {/* ── TAB 2: APPROVED BY QA ── */}
