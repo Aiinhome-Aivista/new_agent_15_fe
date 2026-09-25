@@ -1120,7 +1120,7 @@ export default function PODashboard() {
                                   </div>
                                 )}
                               {/* Logs button — commented out */}
-                              {/* 
+                              
                               <button
                                 className="da-btn da-btn-outline"
                                 style={{
@@ -1138,7 +1138,7 @@ export default function PODashboard() {
                                 </svg>
                                 Logs
                               </button>
-                              */}
+                             
                               {/* Delete button */}
                               <button
                                 className="da-btn da-btn-outline"
