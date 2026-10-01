@@ -4,7 +4,7 @@ import { fetchPullRequests, fetchPullRequest, fetchAuditLogs, downloadPREvidence
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import PRConversationSection from '../../components/PRConversationSection';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { GitPullRequest, ClipboardList, AlertTriangle, X, Download, FileText, RefreshCw, ExternalLink } from 'lucide-react';
+import { GitPullRequest, ClipboardList, AlertTriangle, X, Download, FileText, RefreshCw, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 const PR_STATUS_CLASS = { open: 'open', merged: 'merged', rejected: 'rejected', closed: 'todo' };
@@ -24,6 +24,9 @@ export default function LeadDashboard() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [tab, setTab] = useState('prs'); // 'prs' | 'audit'
   const [error, setError] = useState(null);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
   async function handleDownloadEvidence(prId) {
     if (!prId) return;
@@ -78,9 +81,81 @@ export default function LeadDashboard() {
 
   function handleTabChange(t) {
     setTab(t);
+    setCurrentPage(1);
     if (t === 'audit' && auditLogs.length === 0) loadAuditLogs();
     if (t === 'prs') setSelectedPR(null);
   }
+
+  // Pagination logic
+  const currentList = tab === 'prs' ? prs : auditLogs;
+  const totalPages = Math.max(1, Math.ceil(currentList.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  
+  const paginatedPRs = tab === 'prs' ? prs.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE) : [];
+  const paginatedAudit = tab === 'audit' ? auditLogs.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE) : [];
+
+  const renderPagination = () => {
+    if (currentList.length === 0) return null;
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1.25rem',
+        flexWrap: 'wrap', gap: '0.75rem', borderTop: '1px solid var(--da-border)', background: 'var(--da-surface)',
+        borderBottomLeftRadius: 'var(--da-radius)', borderBottomRightRadius: 'var(--da-radius)',
+        fontSize: '0.82rem', color: 'var(--da-muted)'
+      }}>
+        <div>
+          Showing <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+            {Math.min((safeCurrentPage - 1) * ITEMS_PER_PAGE + 1, currentList.length)}
+          </span> to <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+            {Math.min(safeCurrentPage * ITEMS_PER_PAGE, currentList.length)}
+          </span> of <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+            {currentList.length}
+          </span> {tab === 'prs' ? 'pull requests' : 'logs'}
+        </div>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button type="button" className="da-btn" disabled={safeCurrentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              style={{
+                borderRadius: '24px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'var(--da-surface-2)', border: '1px solid var(--da-border)',
+                color: safeCurrentPage === 1 ? 'var(--da-muted)' : 'var(--da-text)',
+                cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer', opacity: safeCurrentPage === 1 ? 0.45 : 1, transition: 'all 0.15s ease'
+              }}>
+              <ChevronLeft size={14} /> Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
+              const isActive = pageNum === safeCurrentPage;
+              return (
+                <button key={pageNum} type="button" onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    width: '32px', height: '32px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.82rem', fontWeight: isActive ? 700 : 500,
+                    border: isActive ? '1px solid var(--da-accent, #FF5A14)' : '1px solid var(--da-border)',
+                    background: isActive ? 'var(--da-accent, #FF5A14)' : 'var(--da-surface-2)',
+                    color: isActive ? '#FFFFFF' : 'var(--da-text)', cursor: 'pointer',
+                    boxShadow: isActive ? '0 2px 8px rgba(255, 90, 20, 0.35)' : 'none', transition: 'all 0.15s ease'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button type="button" className="da-btn" disabled={safeCurrentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              style={{
+                borderRadius: '24px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'var(--da-surface-2)', border: '1px solid var(--da-border)',
+                color: safeCurrentPage === totalPages ? 'var(--da-muted)' : 'var(--da-text)',
+                cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer', opacity: safeCurrentPage === totalPages ? 0.45 : 1, transition: 'all 0.15s ease'
+              }}>
+              Next <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const openCount = prs.filter(p => p.pr_status === 'open').length;
   const mergedCount = prs.filter(p => p.pr_status === 'merged').length;
@@ -116,7 +191,7 @@ export default function LeadDashboard() {
                   <table className="da-table">
                     <thead><tr><th>PR / Branch</th><th>Story</th><th>Status</th><th>Files</th><th>Created</th></tr></thead>
                     <tbody>
-                      {prs.map(pr => (
+                      {paginatedPRs.map(pr => (
                         <tr key={pr.id} onClick={() => openPR(pr)} style={{ cursor: 'pointer', background: selectedPR?.id === pr.id ? 'var(--da-bg-elevated)' : '' }}>
                           <td>
                             <strong>{pr.pr_title || pr.branch_name}</strong>
@@ -130,6 +205,7 @@ export default function LeadDashboard() {
                       ))}
                     </tbody>
                   </table>
+                  {renderPagination()}
                 </div>
               )}
             </div>
@@ -261,7 +337,7 @@ export default function LeadDashboard() {
               <table className="da-table">
                 <thead><tr><th>Time</th><th>Action</th><th>User</th><th>Target</th></tr></thead>
                 <tbody>
-                  {auditLogs.map(a => (
+                  {paginatedAudit.map(a => (
                     <tr key={a.id}>
                       <td style={{ color: 'var(--da-muted)', fontSize: '0.85rem' }}>
                         {a.created_at ? new Date(a.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'medium' }) : ''}
@@ -274,6 +350,7 @@ export default function LeadDashboard() {
                   {auditLogs.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>No logs yet.</td></tr>}
                 </tbody>
               </table>
+              {renderPagination()}
             </div>
           </div>
         )}
