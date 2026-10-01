@@ -237,7 +237,9 @@ export default function PRConversationSection({ prId, prNumber, prUrl, cachedSum
               {cachedSummary && (
                 <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--da-border)' }}>
                   <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>Cached PR Summary:</span>
-                  <p style={{ margin: '4px 0 0', color: 'var(--da-text)', whiteSpace: 'pre-wrap' }}>{cachedSummary}</p>
+                  <div style={{ margin: '4px 0 0', color: 'var(--da-text)' }} className="markdown-content">
+                    <ReactMarkdown>{cachedSummary}</ReactMarkdown>
+                  </div>
                 </div>
               )}
             </div>

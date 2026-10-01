@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import ReactMarkdown from 'react-markdown';
 import { fetchQAQueue, fetchQAApproved, submitQADecision, downloadStoryEvidenceBlob, resyncQAStory } from '../../services/api';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
@@ -10,7 +11,8 @@ import PRConversationSection from '../../components/PRConversationSection';
 import { 
   Search, RefreshCw, CheckCircle, CheckCircle2, AlertTriangle, 
   XCircle, Check, X, ExternalLink, Calendar, GitPullRequest, 
-  GitBranch, Eye, Terminal, FileText, UserCheck, MessageSquare, Download 
+  GitBranch, Eye, Terminal, FileText, UserCheck, MessageSquare, Download,
+  History, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 import '../../styles/dashboard.css';
@@ -86,23 +88,25 @@ function renderAcceptanceCriteria(acText) {
 
 export default function QADashboard() {
   const { user } = useAuth();
-  const { showConfirm } = useDialog();
+  const { showConfirm, showAlert } = useDialog();
 
   // Tab state
-  const [tab, setTab] = useState('queue'); // 'queue' | 'approved'
+  const [tab, setTab] = useState('queue'); // 'queue' | 'history'
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
   // Queue state
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [selected, setSelected] = useState(null);
 
-  // Approved stories state
+  // Approved / History stories state
   const [approvedList, setApprovedList] = useState([]);
   const [loadingApproved, setLoadingApproved] = useState(false);
   const [approvedSearch, setApprovedSearch] = useState('');
   const [selectedApproved, setSelectedApproved] = useState(null);
+  const [historyFilter, setHistoryFilter] = useState('approved'); // 'approved' or 'rejected'
 
   // Reject modal state
   const [rejectModal, setRejectModal] = useState(false);
@@ -123,6 +127,11 @@ export default function QADashboard() {
   // Merge conflict & re-sync state
   const [conflictData, setConflictData] = useState(null);
   const [resyncing, setResyncing] = useState(false);
+
+  // Reset pagination when tab or history filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab, historyFilter, approvedSearch]);
 
   const handleQuickDownloadPdf = async (e, story) => {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -182,11 +191,10 @@ export default function QADashboard() {
   async function handleApproveSubmit(story) {
     setSubmitting(true);
     setError(null);
-    setSuccess(null);
     try {
       const commentToSend = approveComment.trim() || 'Approved by QA Reviewer — verified all acceptance criteria.';
       await submitQADecision(story.id, 'approved', commentToSend);
-      setSuccess(`"${story.title}" approved and merged. Story marked DONE.`);
+      showAlert(`"${story.title}" approved and merged. Story marked DONE.`);
       setSelected(null);
       setApproveModal(false);
       setConflictData(null);
@@ -206,10 +214,9 @@ export default function QADashboard() {
   async function handleResync(story) {
     setResyncing(true);
     setError(null);
-    setSuccess(null);
     try {
       const res = await resyncQAStory(story.id);
-      setSuccess(res.message || 'Feature branch re-synced successfully with base branch. You can now retry Approve & Merge.');
+      showAlert(res.message || 'Feature branch re-synced successfully with base branch. You can now retry Approve & Merge.');
       setConflictData(null);
       loadQueue();
     } catch (e) {
@@ -226,10 +233,9 @@ export default function QADashboard() {
     }
     setSubmitting(true);
     setError(null);
-    setSuccess(null);
     try {
       await submitQADecision(story.id, 'rejected', rejectComment);
-      setSuccess(`"${story.title}" rejected. Story returned to TO-DO for rework.`);
+      showAlert(`"${story.title}" rejected. Story returned to TO-DO for rework.`);
       setRejectModal(false);
       setRejectComment('');
       setSelected(null);
@@ -241,8 +247,12 @@ export default function QADashboard() {
     }
   }
 
-  // Filtered approved items based on search
+  // Filtered approved items based on search and decision toggle
   const filteredApproved = approvedList.filter(item => {
+    // 1. Filter by toggle
+    if (item.decision !== historyFilter) return false;
+
+    // 2. Filter by search
     if (!approvedSearch.trim()) return true;
     const q = approvedSearch.toLowerCase().trim();
     const storyTitle = (item.story?.title || item.title || '').toLowerCase();
@@ -258,6 +268,76 @@ export default function QADashboard() {
       comments.includes(q)
     );
   });
+
+  // Pagination logic
+  const currentList = tab === 'queue' ? queue : filteredApproved;
+  const totalPages = Math.max(1, Math.ceil(currentList.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  
+  const paginatedQueue = tab === 'queue' ? queue.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE) : [];
+  const paginatedApproved = tab === 'history' || tab === 'approved' ? filteredApproved.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE) : [];
+
+  const renderPagination = () => {
+    if (currentList.length === 0) return null;
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1.25rem',
+        flexWrap: 'wrap', gap: '0.75rem', borderTop: '1px solid var(--da-border)', background: 'var(--da-surface)',
+        borderBottomLeftRadius: 'var(--da-radius)', borderBottomRightRadius: 'var(--da-radius)',
+        fontSize: '0.82rem', color: 'var(--da-muted)'
+      }}>
+        <div>
+          Showing <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+            {Math.min((safeCurrentPage - 1) * ITEMS_PER_PAGE + 1, currentList.length)}
+          </span> to <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+            {Math.min(safeCurrentPage * ITEMS_PER_PAGE, currentList.length)}
+          </span> of <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
+            {currentList.length}
+          </span> stories
+        </div>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button type="button" className="da-btn" disabled={safeCurrentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              style={{
+                borderRadius: '24px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'var(--da-surface-2)', border: '1px solid var(--da-border)',
+                color: safeCurrentPage === 1 ? 'var(--da-muted)' : 'var(--da-text)',
+                cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer', opacity: safeCurrentPage === 1 ? 0.45 : 1, transition: 'all 0.15s ease'
+              }}>
+              <ChevronLeft size={14} /> Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
+              const isActive = pageNum === safeCurrentPage;
+              return (
+                <button key={pageNum} type="button" onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    width: '32px', height: '32px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.82rem', fontWeight: isActive ? 700 : 500,
+                    border: isActive ? '1px solid var(--da-accent, #FF5A14)' : '1px solid var(--da-border)',
+                    background: isActive ? 'var(--da-accent, #FF5A14)' : 'var(--da-surface-2)',
+                    color: isActive ? '#FFFFFF' : 'var(--da-text)', cursor: 'pointer',
+                    boxShadow: isActive ? '0 2px 8px rgba(255, 90, 20, 0.35)' : 'none', transition: 'all 0.15s ease'
+                  }}>
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button type="button" className="da-btn" disabled={safeCurrentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              style={{
+                borderRadius: '24px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'var(--da-surface-2)', border: '1px solid var(--da-border)',
+                color: safeCurrentPage === totalPages ? 'var(--da-muted)' : 'var(--da-text)',
+                cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer', opacity: safeCurrentPage === totalPages ? 0.45 : 1, transition: 'all 0.15s ease'
+              }}>
+              Next <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const tabs = [
     { 
@@ -280,7 +360,7 @@ export default function QADashboard() {
       id: 'approved', 
       label: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <CheckCircle2 size={16} color="var(--da-success)" /> Approved by QA
+          <History size={16} color="var(--da-accent)" /> QA History
           {approvedList.length > 0 && (
             <span 
               className="da-badge" 
@@ -304,10 +384,9 @@ export default function QADashboard() {
     >
       <div className="da-body">
         {error && <div className="da-alert error"><AlertTriangle size={16} /> {error}</div>}
-        {success && <div className="da-alert success"><CheckCircle size={16} /> {success}</div>}
 
         {/* Stats Summary */}
-        <div className="da-stats-grid">
+        <div className="da-stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
           <div 
             className="da-stat-card" 
             onClick={() => setTab('queue')} 
@@ -317,18 +396,31 @@ export default function QADashboard() {
             <div className="da-stat-label">Awaiting Review</div>
             <div className="da-stat-value yellow">{queue.length}</div>
           </div>
-          <div className="da-stat-card">
-            <div className="da-stat-label">PRs Ready for Review</div>
-            <div className="da-stat-value green">{queue.filter(s => s.pr).length}</div>
+          <div 
+            className="da-stat-card" 
+            onClick={() => { setTab('approved'); setHistoryFilter('approved'); }} 
+            style={{ cursor: 'pointer', border: tab === 'approved' && historyFilter === 'approved' ? '1px solid var(--da-success)' : undefined }}
+            title="View Approved Stories"
+          >
+            <div className="da-stat-label">Approved</div>
+            <div className="da-stat-value green">{approvedList.filter(item => item.decision === 'approved').length}</div>
           </div>
           <div 
             className="da-stat-card" 
-            onClick={() => setTab('approved')} 
-            style={{ cursor: 'pointer', border: tab === 'approved' ? '1px solid var(--da-success)' : undefined }}
-            title="View Approved by QA"
+            onClick={() => { setTab('approved'); setHistoryFilter('rejected'); }} 
+            style={{ cursor: 'pointer', border: tab === 'approved' && historyFilter === 'rejected' ? '1px solid var(--da-danger)' : undefined }}
+            title="View Rejected Stories"
           >
-            <div className="da-stat-label">Approved by QA</div>
-            <div className="da-stat-value green">{approvedList.length}</div>
+            <div className="da-stat-label">Rejected</div>
+            <div className="da-stat-value red" style={{ color: 'var(--da-danger)' }}>{approvedList.filter(item => item.decision === 'rejected').length}</div>
+          </div>
+          <div 
+            className="da-stat-card"
+            onClick={() => setTab('approved')} 
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="da-stat-label">Total QA History</div>
+            <div className="da-stat-value">{approvedList.length}</div>
           </div>
         </div>
 
@@ -377,7 +469,7 @@ export default function QADashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {queue.map(story => {
+                      {paginatedQueue.map(story => {
                         const jiraKey = story.jira_story_key;
                         const branch = story.pr?.branch_name || story.current_branch || story.source_branch || 'main';
                         const priority = story.priority || (story.repository_details && story.repository_details[0]?.priority) || 'Medium';
@@ -488,6 +580,7 @@ export default function QADashboard() {
                       })}
                     </tbody>
                   </table>
+                  {renderPagination()}
                 </div>
               )}
             </div>
@@ -840,17 +933,56 @@ export default function QADashboard() {
           </>
         )}
 
-        {/* ── TAB 2: APPROVED BY QA ── */}
+        {/* ── TAB 2: QA HISTORY ── */}
         {tab === 'approved' && (
           <div className="da-section" style={{ marginTop: '1.5rem' }}>
             <div className="da-section-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span className="da-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <CheckCircle2 size={20} color="var(--da-success)" /> Approved by QA
+                  <CheckCircle2 size={20} color="var(--da-success)" /> QA History
                 </span>
+                
+                {/* Toggle Group */}
+                <div style={{ display: 'flex', background: 'var(--da-surface-2)', borderRadius: '6px', padding: '2px', border: '1px solid var(--da-border)' }}>
+                  <button
+                    className={`da-btn ${historyFilter === 'approved' ? '' : 'da-btn-ghost'}`}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '0.75rem',
+                      background: historyFilter === 'approved' ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
+                      color: historyFilter === 'approved' ? 'var(--da-success)' : 'var(--da-muted)',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontWeight: historyFilter === 'approved' ? 600 : 400
+                    }}
+                    onClick={() => setHistoryFilter('approved')}
+                  >
+                    Approved
+                  </button>
+                  <button
+                    className={`da-btn ${historyFilter === 'rejected' ? '' : 'da-btn-ghost'}`}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '0.75rem',
+                      background: historyFilter === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                      color: historyFilter === 'rejected' ? 'var(--da-danger)' : 'var(--da-muted)',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontWeight: historyFilter === 'rejected' ? 600 : 400
+                    }}
+                    onClick={() => setHistoryFilter('rejected')}
+                  >
+                    Rejected
+                  </button>
+                </div>
+
                 <span 
                   className="da-badge" 
-                  style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--da-success)', fontWeight: 700 }}
+                  style={{ 
+                    background: historyFilter === 'approved' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', 
+                    color: historyFilter === 'approved' ? 'var(--da-success)' : 'var(--da-danger)', 
+                    fontWeight: 700 
+                  }}
                 >
                   {filteredApproved.length} {filteredApproved.length === 1 ? 'story' : 'stories'}
                 </span>
@@ -865,7 +997,7 @@ export default function QADashboard() {
                   <input
                     type="text"
                     className="da-input"
-                    placeholder="Search approved stories, key, reviewer..."
+                    placeholder="Search history, key, reviewer, comments..."
                     value={approvedSearch}
                     onChange={e => setApprovedSearch(e.target.value)}
                     style={{ paddingLeft: '32px', height: '34px', fontSize: '0.82rem', width: '100%' }}
@@ -886,15 +1018,19 @@ export default function QADashboard() {
             </div>
 
             {loadingApproved ? (
-              <LoadingSpinner text="Loading approved stories…" size="md" />
+              <LoadingSpinner text={`Loading ${historyFilter} stories…`} size="md" />
             ) : filteredApproved.length === 0 ? (
               <div className="da-empty">
-                <div className="da-empty-icon"><CheckCircle2 size={48} color="var(--da-success)" /></div>
-                <h3>{approvedSearch ? 'No matching approved stories' : 'No approved stories yet'}</h3>
+                <div className="da-empty-icon">
+                  {historyFilter === 'approved' ? <CheckCircle2 size={48} color="var(--da-success)" /> : <XCircle size={48} color="var(--da-danger)" />}
+                </div>
+                <h3>{approvedSearch ? `No matching ${historyFilter} stories` : `No ${historyFilter} stories yet`}</h3>
                 <p>
                   {approvedSearch 
                     ? `No stories matched "${approvedSearch}". Try a different search keyword.` 
-                    : 'When QA reviewers approve and merge stories, they will be listed here with complete review history.'}
+                    : historyFilter === 'approved' 
+                        ? 'When QA reviewers approve and merge stories, they will be listed here with complete review history.'
+                        : 'When QA reviewers reject stories for rework, they will appear here.'}
                 </p>
                 {approvedSearch && (
                   <button className="da-btn da-btn-ghost" onClick={() => setApprovedSearch('')} style={{ marginTop: '0.5rem' }}>
@@ -910,14 +1046,14 @@ export default function QADashboard() {
                       <th style={{ minWidth: '240px' }}>Story</th>
                       <th>Branch</th>
                       <th>Pull Request</th>
-                      <th>Approved By</th>
-                      <th>Approval Date</th>
+                      <th>{historyFilter === 'approved' ? 'Approved By' : 'Rejected By'}</th>
+                      <th>Date</th>
                       <th>QA Feedback</th>
                       <th style={{ textAlign: 'right', minWidth: '120px' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredApproved.map(item => {
+                    {paginatedApproved.map(item => {
                       const storyObj = item.story || {};
                       const prObj = item.pr || {};
                       const reviewerObj = item.reviewer || {};
@@ -925,6 +1061,7 @@ export default function QADashboard() {
                       const jiraKey = storyObj.jira_story_key || item.jira_story_key;
                       const branch = prObj.branch_name || storyObj.source_branch || storyObj.current_branch || 'main';
                       const isSelected = selectedApproved?.story_id === item.story_id || selectedApproved?.review_id === item.review_id;
+                      const isRejected = item.decision === 'rejected';
 
                       return (
                         <tr 
@@ -932,10 +1069,10 @@ export default function QADashboard() {
                           onClick={() => setSelectedApproved(item)}
                           style={{ 
                             cursor: 'pointer',
-                            background: isSelected ? 'rgba(34, 197, 94, 0.08)' : undefined,
+                            background: isSelected ? (isRejected ? 'rgba(239, 68, 68, 0.08)' : 'rgba(34, 197, 94, 0.08)') : undefined,
                             transition: 'background 0.15s ease'
                           }}
-                          title="Click to view full approval details"
+                          title="Click to view full details"
                         >
                           {/* Story Info */}
                           <td>
@@ -957,9 +1094,14 @@ export default function QADashboard() {
                                 )}
                                 <span 
                                   className="da-badge" 
-                                  style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--da-success)', fontSize: '0.68rem', fontWeight: 600 }}
+                                  style={{ 
+                                    background: isRejected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)', 
+                                    color: isRejected ? 'var(--da-danger)' : 'var(--da-success)', 
+                                    fontSize: '0.68rem', 
+                                    fontWeight: 600 
+                                  }}
                                 >
-                                  DONE
+                                  {isRejected ? 'REJECTED' : 'DONE'}
                                 </span>
                               </div>
                               <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--da-text)' }}>
@@ -1085,12 +1227,13 @@ export default function QADashboard() {
                     })}
                   </tbody>
                 </table>
+                {renderPagination()}
               </div>
             )}
           </div>
         )}
 
-        {/* ── MODAL: APPROVED STORY DETAILS ── */}
+        {/* ── MODAL: QA HISTORY DETAILS ── */}
         {selectedApproved && (
           <div 
             className="da-modal-overlay" 
@@ -1113,6 +1256,10 @@ export default function QADashboard() {
                 overflow: 'hidden'
               }}
             >
+              {(() => {
+                const isRejected = selectedApproved.decision === 'rejected';
+                return (
+                  <>
               {/* Modal Header */}
               <div style={{
                 padding: '1.25rem 1.5rem',
@@ -1132,16 +1279,17 @@ export default function QADashboard() {
                     <span 
                       className="da-badge" 
                       style={{ 
-                        background: 'rgba(34, 197, 94, 0.15)', 
-                        color: 'var(--da-success)', 
-                        border: '1px solid rgba(34, 197, 94, 0.3)', 
+                        background: isRejected ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)', 
+                        color: isRejected ? 'var(--da-danger)' : 'var(--da-success)', 
+                        border: isRejected ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)', 
                         fontWeight: 700,
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px'
                       }}
                     >
-                      <CheckCircle2 size={13} /> APPROVED & MERGED
+                      {isRejected ? <XCircle size={13} /> : <CheckCircle2 size={13} />}
+                      {isRejected ? 'REJECTED FOR REWORK' : 'APPROVED & MERGED'}
                     </span>
                     {(selectedApproved.story?.external_provider || selectedApproved.external_provider) && (
                       <span className="da-badge" style={{ background: 'rgba(255, 90, 20, 0.1)', color: 'var(--da-accent)', border: '1px solid var(--da-border-orange)' }}>
@@ -1174,17 +1322,17 @@ export default function QADashboard() {
               }}>
                 <div>
                   <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
-                    APPROVED BY
+                    {isRejected ? 'REJECTED BY' : 'APPROVED BY'}
                   </span>
                   <strong style={{ color: 'var(--da-text)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <UserCheck size={14} color="var(--da-success)" />
+                    <UserCheck size={14} color={isRejected ? 'var(--da-danger)' : 'var(--da-success)'} />
                     {selectedApproved.reviewer?.name || selectedApproved.reviewer?.email || 'QA Reviewer'}
                   </strong>
                 </div>
 
                 <div>
                   <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
-                    APPROVAL TIMESTAMP
+                    {isRejected ? 'REJECTION TIMESTAMP' : 'APPROVAL TIMESTAMP'}
                   </span>
                   <span style={{ color: 'var(--da-text)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Calendar size={13} />
@@ -1224,7 +1372,7 @@ export default function QADashboard() {
                       {selectedApproved.pr.pr_number ? `#${selectedApproved.pr.pr_number}` : 'View PR'} <ExternalLink size={12} />
                     </a>
                   ) : (
-                    <span style={{ color: 'var(--da-success)', fontWeight: 600 }}>Merged</span>
+                    <span style={{ color: isRejected ? 'var(--da-muted)' : 'var(--da-success)', fontWeight: 600 }}>{isRejected ? 'N/A' : 'Merged'}</span>
                   )}
                 </div>
               </div>
@@ -1241,16 +1389,16 @@ export default function QADashboard() {
               }}>
                 {/* QA Feedback Section */}
                 <div style={{
-                  background: 'rgba(34, 197, 94, 0.05)',
-                  border: '1px solid rgba(34, 197, 94, 0.25)',
+                  background: isRejected ? 'rgba(239, 68, 68, 0.05)' : 'rgba(34, 197, 94, 0.05)',
+                  border: isRejected ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(34, 197, 94, 0.25)',
                   borderRadius: '6px',
                   padding: '1rem 1.25rem'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.4rem', color: 'var(--da-success)', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.4rem', color: isRejected ? 'var(--da-danger)' : 'var(--da-success)', fontWeight: 700, fontSize: '0.85rem' }}>
                     <MessageSquare size={15} /> QA Review Feedback & Sign-off Notes
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--da-text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                    {selectedApproved.comments || 'Story was verified against acceptance criteria and approved for merge.'}
+                    {selectedApproved.comments || (isRejected ? 'Story was rejected for rework.' : 'Story was verified against acceptance criteria and approved for merge.')}
                   </div>
                 </div>
 
@@ -1308,9 +1456,9 @@ export default function QADashboard() {
                       fontSize: '0.85rem'
                     }}>
                       {selectedApproved.pr.pr_summary && (
-                        <p style={{ margin: '0 0 0.75rem 0', color: '#374151', lineHeight: 1.5 }}>
-                          {selectedApproved.pr.pr_summary}
-                        </p>
+                        <div style={{ margin: '0 0 0.75rem 0', color: 'var(--da-text)', lineHeight: 1.5, overflowX: 'auto', paddingRight: '5px' }} className="markdown-content">
+                          <ReactMarkdown>{selectedApproved.pr.pr_summary}</ReactMarkdown>
+                        </div>
                       )}
                       {selectedApproved.pr.changed_files && Array.isArray(selectedApproved.pr.changed_files) && selectedApproved.pr.changed_files.length > 0 && (
                         <div>
@@ -1375,6 +1523,9 @@ export default function QADashboard() {
                   </button>
                 </div>
               </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
