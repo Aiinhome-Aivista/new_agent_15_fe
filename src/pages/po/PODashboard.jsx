@@ -2173,6 +2173,45 @@ export default function PODashboard() {
                 </div>
               )}
 
+              {selectedStory.repository_details && selectedStory.repository_details.length > 0 && (
+                <div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--da-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+                    Repository Configuration
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {selectedStory.repository_details.map((repo, idx) => (
+                      <div key={idx} style={{
+                        background: 'var(--da-surface-2)',
+                        padding: '0.85rem 1rem',
+                        borderRadius: 'var(--da-radius-sm)',
+                        border: repo.is_reference ? '1px solid #10b981' : '1px solid var(--da-border-orange)',
+                        fontSize: '0.85rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {repo.is_reference ? <span title="Reference Repo">📚</span> : <span title="Target Repo">🎯</span>}
+                            <strong style={{ color: 'var(--da-text)' }}>{repo.name}</strong>
+                          </div>
+                          <span className="da-badge default" style={{ fontSize: '0.72rem' }}>
+                            Branch: {repo.branch || 'main'}
+                          </span>
+                        </div>
+                        <div style={{ color: 'var(--da-muted)', fontSize: '0.78rem' }}>
+                          <ExternalLink size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                          <a href={repo.url} target="_blank" rel="noreferrer" style={{ color: 'var(--da-accent)', textDecoration: 'none' }}>
+                            {repo.url}
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+
               {/* Attachments Section in Modal */}
               {selectedStory.repository_details?.[0]?.attachments?.length > 0 && (
                 <div>
