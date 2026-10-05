@@ -841,6 +841,7 @@ export default function PODashboard() {
                       <th>Jira Key</th>
                       <th>Priority & Points</th>
                       <th>Assignee</th>
+                      <th>Start Date</th>
                       <th>Due Date</th>
                       <th>Status</th>
                       <th style={{ textAlign: 'right', minWidth: '160px' }}>Actions</th>
@@ -933,6 +934,15 @@ export default function PODashboard() {
                                 </span>
                               ) : (
                                 <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>Unassigned</span>
+                              )}
+                            </td>
+                            <td>
+                              {details.start_date ? (
+                                <span style={{ fontSize: '0.8rem', color: 'var(--da-text)', fontWeight: 500 }}>
+                                  {details.start_date}
+                                </span>
+                              ) : (
+                                <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>-</span>
                               )}
                             </td>
                             <td>
@@ -2064,6 +2074,16 @@ export default function PODashboard() {
                   </span>
                   <span className="da-badge" style={{ background: 'rgba(255, 90, 20, 0.1)', color: 'var(--da-accent)', border: '1px solid var(--da-border-orange)', fontWeight: 700 }}>
                     {selectedStory.repository_details[0].story_points} pts
+                  </span>
+                </div>
+              )}
+              {selectedStory.repository_details?.[0]?.start_date && (
+                <div>
+                  <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
+                    START DATE
+                  </span>
+                  <span style={{ color: 'var(--da-text)', fontWeight: 600 }}>
+                    {selectedStory.repository_details[0].start_date}
                   </span>
                 </div>
               )}
