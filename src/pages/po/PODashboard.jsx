@@ -896,11 +896,11 @@ export default function PODashboard() {
                                     #{lbl.trim()}
                                   </span>
                                 ))}
-                                {story.description && (
+                                {/* {story.description && (
                                   <span style={{ fontSize: '0.78rem', color: '#7b82a8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>
                                     {story.description.substring(0, 50)}...
                                   </span>
-                                )}
+                                )} */}
                               </div>
                             </td>
                             <td>
