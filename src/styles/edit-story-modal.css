@@ -1,0 +1,752 @@
+/* ==========================================================================
+   DEVAA - EDIT STORY MODAL DESIGN SYSTEM
+   Modern Accordion Specifications & Universal Light/Dark Scrollbars
+   ========================================================================== */
+
+/* ── Modal Overlay & Animation ────────────────────────────────────────── */
+.esm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 23, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: esmOverlayFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes esmOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Modal Window Container ───────────────────────────────────────────── */
+.esm-modal {
+  background: var(--da-surface);
+  color: var(--da-text);
+  border: 1px solid var(--da-border-orange);
+  border-radius: 16px;
+  max-width: 740px;
+  width: min(740px, 95vw);
+  height: min(88vh, 860px);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 90, 20, 0.12);
+  overflow: hidden;
+  position: relative;
+  animation: esmModalSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme='dark'] .esm-modal {
+  box-shadow: 0 28px 70px -15px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 90, 20, 0.2);
+}
+
+@keyframes esmModalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Top Accent Glow Stripe */
+.esm-accent-stripe {
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, #FF5A14 0%, #FF8A55 50%, #FF5A14 100%);
+  flex-shrink: 0;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+.esm-header {
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--da-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--da-surface-2);
+  flex-shrink: 0;
+}
+
+.esm-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.esm-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.esm-key-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 90, 20, 0.12);
+  color: var(--da-accent);
+  border: 1px solid rgba(255, 90, 20, 0.3);
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.esm-title {
+  margin: 1px 0 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--da-text);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.esm-subtitle {
+  font-size: 0.78rem;
+  color: var(--da-muted);
+  margin: 0;
+}
+
+.esm-close-btn {
+  background: transparent;
+  border: 1px solid var(--da-border);
+  color: var(--da-muted);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.esm-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  transform: scale(1.04);
+}
+
+/* ── Form Body & Scroll ───────────────────────────────────────────────── */
+.esm-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.esm-body {
+  padding: 1.2rem 1.4rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* ── Scrollbar Styling (Cross-Browser Light & Dark) ─────────────────── */
+.esm-body,
+.esm-textarea,
+.esm-preview-box {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.esm-body::-webkit-scrollbar,
+.esm-textarea::-webkit-scrollbar,
+.esm-preview-box::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.esm-body::-webkit-scrollbar-track,
+.esm-textarea::-webkit-scrollbar-track,
+.esm-preview-box::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 9999px;
+}
+
+.esm-body::-webkit-scrollbar-thumb,
+.esm-textarea::-webkit-scrollbar-thumb,
+.esm-preview-box::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.esm-body::-webkit-scrollbar-thumb:hover,
+.esm-textarea::-webkit-scrollbar-thumb:hover,
+.esm-preview-box::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+.esm-body::-webkit-scrollbar-thumb:active,
+.esm-textarea::-webkit-scrollbar-thumb:active,
+.esm-preview-box::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+.esm-body::-webkit-scrollbar-button,
+.esm-textarea::-webkit-scrollbar-button,
+.esm-preview-box::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.esm-body::-webkit-scrollbar-corner,
+.esm-textarea::-webkit-scrollbar-corner,
+.esm-preview-box::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Meta Section Card ────────────────────────────────────────────────── */
+.esm-meta-card {
+  background: var(--da-surface-2);
+  border: 1px solid var(--da-border);
+  border-radius: 12px;
+  padding: 0.95rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex-shrink: 0;
+}
+
+.esm-meta-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--da-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -0.25rem;
+}
+
+.esm-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--da-text);
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+.esm-field-label span.req {
+  color: var(--da-accent);
+  margin-left: 2px;
+}
+
+.esm-field-label span.hint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--da-muted);
+}
+
+.esm-input, .esm-select {
+  width: 100%;
+  background: var(--da-surface);
+  border: 1px solid var(--da-border);
+  border-radius: 8px;
+  color: var(--da-text);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.esm-input:focus, .esm-select:focus {
+  border-color: var(--da-accent);
+  box-shadow: 0 0 0 3px rgba(255, 90, 20, 0.16);
+  background: var(--da-surface);
+}
+
+[data-theme='dark'] .esm-input,
+[data-theme='dark'] .esm-select {
+  background: #111520;
+  border-color: #242d3d;
+}
+
+[data-theme='dark'] .esm-input:focus,
+[data-theme='dark'] .esm-select:focus {
+  border-color: var(--da-accent);
+  background: #151b29;
+}
+
+/* Points Pills */
+.esm-points-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.esm-point-pill {
+  padding: 3px 9px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  background: var(--da-surface);
+  border: 1px solid var(--da-border);
+  color: var(--da-text);
+}
+
+.esm-point-pill:hover {
+  border-color: var(--da-accent);
+  color: var(--da-accent);
+}
+
+.esm-point-pill.active {
+  border-color: var(--da-accent);
+  background: linear-gradient(135deg, rgba(255, 90, 20, 0.18) 0%, rgba(255, 122, 69, 0.1) 100%);
+  color: var(--da-accent);
+  box-shadow: 0 2px 6px rgba(255, 90, 20, 0.2);
+  font-weight: 700;
+}
+
+/* ── Specifications & Criteria Accordion Section ──────────────────────── */
+.esm-accordion-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.esm-section-heading {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--da-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.esm-toggle-all-btn {
+  background: none;
+  border: none;
+  color: var(--da-accent);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.esm-toggle-all-btn:hover {
+  background: rgba(255, 90, 20, 0.1);
+  text-decoration: underline;
+}
+
+/* ── Accordion Card ───────────────────────────────────────────────────── */
+.esm-accordion-card {
+  border: 1px solid var(--da-border);
+  border-radius: 12px;
+  background: var(--da-surface);
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  flex-shrink: 0;
+  min-height: fit-content;
+}
+
+.esm-accordion-card.expanded {
+  border-color: rgba(255, 90, 20, 0.45);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .esm-accordion-card.expanded {
+  border-color: rgba(255, 90, 20, 0.45);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+
+/* Accordion Header */
+.esm-accordion-header {
+  padding: 0.85rem 1.15rem;
+  min-height: 52px;
+  background: var(--da-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid transparent;
+  flex-shrink: 0;
+}
+
+.esm-accordion-card.expanded .esm-accordion-header {
+  border-bottom-color: var(--da-border);
+}
+
+.esm-accordion-header:hover {
+  background: rgba(255, 90, 20, 0.05);
+}
+
+.esm-accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.esm-icon-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.esm-icon-pill.desc {
+  background: rgba(255, 90, 20, 0.12);
+  color: var(--da-accent);
+}
+
+.esm-icon-pill.ac {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.esm-accordion-card:hover .esm-icon-pill {
+  transform: scale(1.05);
+}
+
+.esm-accordion-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.esm-accordion-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--da-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.esm-accordion-subtitle {
+  font-size: 0.72rem;
+  color: var(--da-muted);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.esm-count-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: var(--da-surface);
+  border: 1px solid var(--da-border);
+  color: var(--da-muted);
+  letter-spacing: 0.01em;
+}
+
+.esm-count-badge.has-content {
+  background: rgba(255, 90, 20, 0.1);
+  color: var(--da-accent);
+  border-color: rgba(255, 90, 20, 0.25);
+}
+
+.esm-count-badge.ac-badge {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+/* Accordion Header Controls */
+.esm-accordion-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Edit / Preview Tabs */
+.esm-tab-group {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--da-surface);
+  border: 1px solid var(--da-border);
+  border-radius: 7px;
+}
+
+.esm-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--da-muted);
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.18s ease;
+}
+
+.esm-tab-btn:hover {
+  color: var(--da-text);
+}
+
+.esm-tab-btn.active {
+  background: var(--da-accent);
+  color: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(255, 90, 20, 0.3);
+}
+
+/* Chevron Indicator */
+.esm-chevron {
+  color: var(--da-muted);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.esm-chevron.expanded {
+  transform: rotate(180deg);
+  color: var(--da-accent);
+}
+
+/* ── Accordion Content ────────────────────────────────────────────────── */
+.esm-accordion-content {
+  padding: 1rem 1.15rem;
+  background: var(--da-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  animation: esmContentSlide 0.22s ease-out forwards;
+}
+
+@keyframes esmContentSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Textarea with Custom Scrollbar */
+.esm-textarea {
+  width: 100%;
+  min-height: 125px;
+  background: var(--da-surface-2);
+  border: 1px solid var(--da-border);
+  border-radius: 8px;
+  color: var(--da-text);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.esm-textarea:focus {
+  border-color: var(--da-accent);
+  box-shadow: 0 0 0 3px rgba(255, 90, 20, 0.16);
+  background: var(--da-surface);
+}
+
+[data-theme='dark'] .esm-textarea {
+  background: #111520;
+  border-color: #242d3d;
+}
+
+[data-theme='dark'] .esm-textarea:focus {
+  background: #141926;
+  border-color: var(--da-accent);
+}
+
+/* Quick Formatting Toolbar */
+.esm-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.esm-tools-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.esm-tool-btn {
+  background: var(--da-surface-2);
+  border: 1px solid var(--da-border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--da-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.esm-tool-btn:hover {
+  background: rgba(255, 90, 20, 0.08);
+  border-color: var(--da-border-orange);
+  color: var(--da-accent);
+}
+
+.esm-tool-btn.primary-tool {
+  color: var(--da-accent);
+  background: rgba(255, 90, 20, 0.06);
+  border-color: rgba(255, 90, 20, 0.25);
+  font-weight: 600;
+}
+
+.esm-tool-btn.primary-tool:hover {
+  background: var(--da-accent);
+  color: #FFFFFF;
+}
+
+.esm-tools-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--da-muted);
+}
+
+/* ── Markdown Preview Panel ───────────────────────────────────────────── */
+.esm-preview-box {
+  background: var(--da-surface-2);
+  border: 1px solid var(--da-border);
+  border-radius: 8px;
+  padding: 0.85rem 1.15rem;
+  min-height: 120px;
+  max-height: 280px;
+  overflow-y: auto;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+[data-theme='dark'] .esm-preview-box {
+  background: #0f131d;
+  border-color: #222b3b;
+}
+
+.esm-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  color: var(--da-muted);
+  text-align: center;
+  gap: 6px;
+}
+
+.esm-preview-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.esm-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--da-border);
+  background: var(--da-surface-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.esm-sync-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--da-muted);
+}
+
+.esm-sync-note svg {
+  color: var(--da-accent);
+}
+
+.esm-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.esm-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.6rem 1.3rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #FF5A14 0%, #FF7A45 100%);
+  color: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 90, 20, 0.35);
+  transition: all 0.2s ease;
+}
+
+.esm-btn-save:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F56B2F 0%, #FF5A14 100%);
+  box-shadow: 0 6px 20px rgba(255, 90, 20, 0.45);
+  transform: translateY(-1px);
+}
+
+.esm-btn-save:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.esm-btn-save:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}

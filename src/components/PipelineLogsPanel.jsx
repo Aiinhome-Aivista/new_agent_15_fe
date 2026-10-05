@@ -39,9 +39,89 @@ const LEVEL_META = {
 
 const agentColor = (agent) => AGENT_COLORS[agent] || '#9ca3af';
 
+/**
+ * Converts a UTC timestamp into IST (Indian Standard Time, UTC + 05:30)
+ * formatted as hh:mm:ss AM/PM. Handles ISO strings with/without timezone offsets.
+ */
 function ts(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  try {
+    const match = String(iso).match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+    if (!match) {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    }
+
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hours = parseInt(match[4], 10);
+    const minutes = parseInt(match[5], 10);
+    const seconds = parseInt(match[6], 10);
+
+    // Treat the timestamp numbers as UTC
+    const utcTimestamp = Date.UTC(year, month, day, hours, minutes, seconds);
+    // Add 5 hours and 30 minutes for IST
+    const istMs = utcTimestamp + (5.5 * 60 * 60 * 1000);
+    const istDate = new Date(istMs);
+
+    let istHours = istDate.getUTCHours();
+    const istMinutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+    const istSeconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+    const ampm = istHours >= 12 ? 'PM' : 'AM';
+    istHours = istHours % 12;
+    if (istHours === 0) istHours = 12;
+    const formattedHours = String(istHours).padStart(2, '0');
+
+    return `${formattedHours}:${istMinutes}:${istSeconds} ${ampm}`;
+  } catch (e) {
+    return String(iso);
+  }
+}
+
+/**
+ * Returns full date and time in IST for tooltip display
+ */
+function tsFull(iso) {
+  if (!iso) return '';
+  try {
+    const match = String(iso).match(/(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+    if (!match) return iso;
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hours = parseInt(match[4], 10);
+    const minutes = parseInt(match[5], 10);
+    const seconds = parseInt(match[6], 10);
+
+    const utcTimestamp = Date.UTC(year, month, day, hours, minutes, seconds);
+    const istMs = utcTimestamp + (5.5 * 60 * 60 * 1000);
+    const istDate = new Date(istMs);
+
+    const dayStr = String(istDate.getUTCDate()).padStart(2, '0');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthStr = monthNames[istDate.getUTCMonth()];
+    const yearStr = istDate.getUTCFullYear();
+
+    let istHours = istDate.getUTCHours();
+    const istMinutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+    const istSeconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+    const ampm = istHours >= 12 ? 'PM' : 'AM';
+    istHours = istHours % 12;
+    if (istHours === 0) istHours = 12;
+    const formattedHours = String(istHours).padStart(2, '0');
+
+    return `${dayStr} ${monthStr} ${yearStr}, ${formattedHours}:${istMinutes}:${istSeconds} ${ampm} IST`;
+  } catch (e) {
+    return String(iso);
+  }
 }
 
 /* ─── main component ───────────────────────────────────────────── */
@@ -140,9 +220,23 @@ export default function PipelineLogsPanel({ storyId, storyTitle, onClose }) {
             <div style={{
               fontFamily: 'Inter,sans-serif', fontSize: '0.9rem',
               fontWeight: 700, color: '#fff',
+              display: 'flex', alignItems: 'center', gap: '8px',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              Pipeline Activity Log
+              <span>Pipeline Activity Log</span>
+              <span style={{
+                fontSize: '0.62rem',
+                fontWeight: 600,
+                background: 'rgba(255,90,20,0.18)',
+                color: '#FF8A55',
+                border: '1px solid rgba(255,90,20,0.3)',
+                borderRadius: '4px',
+                padding: '1px 6px',
+                letterSpacing: '0.04em',
+                fontFamily: "'JetBrains Mono','Fira Code',monospace"
+              }}>
+                IST
+              </span>
             </div>
             <div style={{
               fontSize: '0.72rem', color: 'rgba(255,255,255,0.45)',
@@ -230,12 +324,15 @@ export default function PipelineLogsPanel({ storyId, storyTitle, onClose }) {
                   borderLeft: `2px solid ${isNew ? meta.color + '44' : 'transparent'}`,
                 }}
               >
-                {/* timestamp */}
-                <span style={{
-                  fontSize: '0.65rem', color: 'rgba(255,255,255,0.28)',
-                  flexShrink: 0, lineHeight: '18px', minWidth: '68px',
-                  letterSpacing: '0.02em',
-                }}>
+                {/* timestamp (IST) */}
+                <span 
+                  title={tsFull(log.created_at)}
+                  style={{
+                    fontSize: '0.67rem', color: 'rgba(255,255,255,0.4)',
+                    flexShrink: 0, lineHeight: '18px', minWidth: '82px',
+                    letterSpacing: '0.02em', cursor: 'default'
+                  }}
+                >
                   {ts(log.created_at)}
                 </span>
 
