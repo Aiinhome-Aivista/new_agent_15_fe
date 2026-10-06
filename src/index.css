@@ -15,6 +15,11 @@
   --text-secondary: #666666;
   --text-placeholder: #B0B0B0;
   --text-inverse: #FFFFFF;
+  /* Scrollbar Palette - Light */
+  --scrollbar-track: rgba(0, 0, 0, 0.03);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb-hover: #FF5A14;
+  --scrollbar-thumb-active: #E04F12;
 }
 
 [data-theme='dark'] {
@@ -27,12 +32,57 @@
   --text-secondary: #8a95a7;
   --text-placeholder: #64748b;
   --text-inverse: #0e121b;
+
+  /* Scrollbar Palette - Dark */
+  --scrollbar-track: rgba(255, 255, 255, 0.03);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.24);
+  --scrollbar-thumb-hover: #FF7A45;
+  --scrollbar-thumb-active: #FF5A14;
 }
 
+/* ── Modern Cross-Browser Scrollbars (Light & Dark Theme) ─────── */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 body {

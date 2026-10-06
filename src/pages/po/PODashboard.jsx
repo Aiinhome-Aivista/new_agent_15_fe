@@ -13,6 +13,7 @@ import {
 } from '../../services/api';
 import PipelineLogsPanel from '../../components/PipelineLogsPanel';
 import EvidenceModal from '../../components/EvidenceModal';
+import EditStoryModal from '../../components/EditStoryModal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { DashboardLayout } from '../../layouts/DashboardLayout';
 import { useDialog } from '../../contexts/DialogContext';
@@ -2345,228 +2346,17 @@ export default function PODashboard() {
       </div>
       )}
 
-      {/* ── EDIT STORY MODAL (Only for TO-DO stories) ── */}
+      {/* ── EDIT STORY MODAL (With Accordion for Specs & AC + Dual Theme Scrollbars) ── */}
       {editingStory && (
-        <div 
-          className="da-modal-overlay" 
-          onClick={() => setEditingStory(null)}
-          style={{ zIndex: 1100, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-        >
-          <div 
-            className="da-modal-content" 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--da-surface)',
-              borderRadius: 'var(--da-radius)',
-              maxWidth: '650px',
-              width: '95%',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 20px 45px rgba(0,0,0,0.22)',
-              border: '1px solid var(--da-border-orange)',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Header */}
-            <div style={{
-              padding: '1.25rem 1.5rem',
-              borderBottom: '1px solid var(--da-border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: 'var(--da-surface-2)'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="da-badge default" style={{ fontWeight: 700 }}>
-                    {editingStory.jira_story_key || `Story #${editingStory.id}`}
-                  </span>
-                  <span className="da-badge todo">TO-DO</span>
-                </div>
-                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--da-text)', fontWeight: 700 }}>
-                  Edit Story Details
-                </h3>
-              </div>
-              <button 
-                className="da-btn da-btn-ghost" 
-                onClick={() => setEditingStory(null)}
-                style={{ padding: '6px 8px', color: 'var(--da-muted)' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Edit Form */}
-            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-              <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="da-form-group">
-                  <label>Story Title *</label>
-                  <input 
-                    type="text"
-                    value={editFormData.title}
-                    onChange={e => setEditFormData({...editFormData, title: e.target.value})}
-                    required
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem' }}>
-                  <div className="da-form-group">
-                    <label>Priority</label>
-                    <select 
-                      value={editFormData.priority}
-                      onChange={e => setEditFormData({...editFormData, priority: e.target.value})}
-                    >
-                      <option value="Highest">Highest</option>
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
-                      <option value="Lowest">Lowest</option>
-                    </select>
-                  </div>
-
-                  <div className="da-form-group">
-                    <label>Story Points</label>
-                    <input 
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={editFormData.story_points}
-                      onChange={e => setEditFormData({...editFormData, story_points: e.target.value})}
-                      placeholder="e.g. 1, 2, 3, 5, 8"
-                    />
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-                      {['1', '2', '3', '5', '8', '13'].map(pts => (
-                        <button
-                          key={pts}
-                          type="button"
-                          onClick={() => setEditFormData({...editFormData, story_points: pts})}
-                          style={{
-                            padding: '2px 8px',
-                            fontSize: '0.72rem',
-                            borderRadius: '4px',
-                            border: String(editFormData.story_points) === pts ? '1px solid var(--da-accent)' : '1px solid var(--da-border)',
-                            background: String(editFormData.story_points) === pts ? 'rgba(255, 90, 20, 0.12)' : 'var(--da-surface-2)',
-                            color: String(editFormData.story_points) === pts ? 'var(--da-accent)' : 'var(--da-text)',
-                            cursor: 'pointer',
-                            fontWeight: 600
-                          }}
-                        >
-                          {pts}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="da-form-group">
-                    <label>Due Date</label>
-                    <input 
-                      type="date"
-                      value={editFormData.due_date}
-                      onChange={e => setEditFormData({...editFormData, due_date: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div className="da-form-group">
-                  <label>Labels / Tags</label>
-                  <input 
-                    type="text"
-                    value={editFormData.labels}
-                    onChange={e => setEditFormData({...editFormData, labels: e.target.value})}
-                    placeholder="e.g. frontend, backend, bug (comma-separated)"
-                  />
-                </div>
-
-                <div className="da-form-group">
-                  <label>Assignee</label>
-                  {jiraUsers && jiraUsers.length > 0 ? (
-                    <select
-                      value={editFormData.assignee_account_id || ''}
-                      onChange={e => {
-                        const val = e.target.value;
-                        const matched = jiraUsers.find(u => u.accountId === val);
-                        setEditFormData({
-                          ...editFormData,
-                          assignee_account_id: val,
-                          assignee: matched ? (matched.displayName || matched.emailAddress) : val
-                        });
-                      }}
-                    >
-                      <option value="">-- Select Assignee --</option>
-                      {jiraUsers.map(u => (
-                        <option key={u.accountId} value={u.accountId}>
-                          {u.displayName} {u.emailAddress ? `(${u.emailAddress})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input 
-                      type="text"
-                      value={editFormData.assignee}
-                      onChange={e => setEditFormData({...editFormData, assignee: e.target.value})}
-                      placeholder="e.g. name or email address"
-                    />
-                  )}
-                  <span style={{ fontSize: '0.75rem', color: '#888', marginTop: '2px', display: 'block' }}>
-                    {editFormData.assignee ? `Assigned to: ${editFormData.assignee}` : 'Unassigned'}
-                  </span>
-                </div>
-
-
-                <div className="da-form-group">
-                  <label>Description</label>
-                  <textarea 
-                    rows={4}
-                    value={editFormData.description}
-                    onChange={e => setEditFormData({...editFormData, description: e.target.value})}
-                    placeholder="Updated description or requirements..."
-                  />
-                </div>
-
-                <div className="da-form-group">
-                  <label>Acceptance Criteria</label>
-                  <textarea 
-                    rows={3}
-                    value={editFormData.acceptance_criteria}
-                    onChange={e => setEditFormData({...editFormData, acceptance_criteria: e.target.value})}
-                    placeholder="Updated acceptance criteria..."
-                  />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div style={{
-                padding: '1rem 1.5rem',
-                borderTop: '1px solid var(--da-border)',
-                background: 'var(--da-surface-2)',
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '0.75rem'
-              }}>
-                <button 
-                  type="button"
-                  className="da-btn da-btn-ghost" 
-                  onClick={() => setEditingStory(null)}
-                  disabled={savingEdit}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="da-btn da-btn-primary"
-                  disabled={savingEdit}
-                >
-                  {savingEdit ? (
-                    <><RefreshCw size={14} className="lucide-animated-spin" /> Saving Changes...</>
-                  ) : (
-                    'Save Changes'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditStoryModal
+          story={editingStory}
+          editFormData={editFormData}
+          setEditFormData={setEditFormData}
+          jiraUsers={jiraUsers}
+          savingEdit={savingEdit}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingStory(null)}
+        />
       )}
       {/* ── DELETE CONFIRMATION MODAL ── */}
       {storyToDelete && (
