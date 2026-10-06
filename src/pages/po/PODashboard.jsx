@@ -430,6 +430,11 @@ export default function PODashboard() {
   }
 
   const handleRunDevaa = async (storyId, isRework = false) => {
+    // Debounce guard: prevent concurrent or double-click execution for the same story
+    if (pipelineRuns[storyId]?.status === 'running') {
+      return;
+    }
+
     // Open logs panel automatically so user can watch live
     const runningStory = stories.find(s => s.id === storyId);
     if (runningStory) setLogsPanelStory(runningStory);
@@ -1024,6 +1029,7 @@ export default function PODashboard() {
                                     <button 
                                       className="da-btn da-btn-outline" 
                                       style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}
+                                      disabled={pipelineRuns[story.id]?.status === 'running'}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleRunDevaa(story.id, Boolean(story.has_rework));
@@ -1061,6 +1067,7 @@ export default function PODashboard() {
                                           fontWeight: 600,
                                           boxShadow: '0 2px 4px rgba(217, 119, 6, 0.25)'
                                         }}
+                                        disabled={pipelineRuns[story.id]?.status === 'running'}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleRunDevaa(story.id, true);
@@ -1073,6 +1080,7 @@ export default function PODashboard() {
                                       <button 
                                         className="da-btn da-btn-primary" 
                                         style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        disabled={pipelineRuns[story.id]?.status === 'running'}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleRunDevaa(story.id, false);
