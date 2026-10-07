@@ -987,28 +987,54 @@ export default function PODashboard() {
                                     <span>{pipelineRuns[story.id].stage || 'Running'}...</span>
                                   </div>
                                 ) : pipelineRuns[story.id]?.status === 'success' && pipelineRuns[story.id].pr_url ? (
-                                  <a 
-                                    href={pipelineRuns[story.id].pr_url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="da-btn"
-                                    style={{ 
-                                      background: 'rgba(16, 185, 129, 0.1)', 
-                                      color: '#059669', 
-                                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                                      padding: '0.25rem 0.65rem', 
-                                      fontSize: '0.75rem', 
-                                      display: 'flex', 
-                                      alignItems: 'center', 
-                                      gap: '4px',
-                                      textDecoration: 'none',
-                                      fontWeight: 600
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    title="Open created Pull Request"
-                                  >
-                                    <CheckCircle2 size={13} color="#059669" /> PR Created <ExternalLink size={11} />
-                                  </a>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <a 
+                                      href={pipelineRuns[story.id].pr_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="da-btn"
+                                      style={{ 
+                                        background: 'rgba(16, 185, 129, 0.1)', 
+                                        color: '#059669', 
+                                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                                        padding: '0.25rem 0.65rem', 
+                                        fontSize: '0.75rem', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '4px',
+                                        textDecoration: 'none',
+                                        fontWeight: 600
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="Open Primary Pull Request"
+                                    >
+                                      <CheckCircle2 size={13} color="#059669" /> PR: {pipelineRuns[story.id].repo_name || 'Created'} <ExternalLink size={11} />
+                                    </a>
+                                    {pipelineRuns[story.id].secondary_pr_url && (
+                                      <a 
+                                        href={pipelineRuns[story.id].secondary_pr_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="da-btn"
+                                        style={{ 
+                                          background: 'rgba(16, 185, 129, 0.1)', 
+                                          color: '#059669', 
+                                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                                          padding: '0.25rem 0.65rem', 
+                                          fontSize: '0.75rem', 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          gap: '4px',
+                                          textDecoration: 'none',
+                                          fontWeight: 600
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="Open Secondary Pull Request"
+                                      >
+                                        <CheckCircle2 size={13} color="#059669" /> PR: {pipelineRuns[story.id].secondary_repo_name || 'Secondary'} <ExternalLink size={11} />
+                                      </a>
+                                    )}
+                                  </div>
                                 ) : pipelineRuns[story.id]?.status === 'failed' ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <span 

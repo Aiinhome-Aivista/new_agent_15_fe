@@ -19,7 +19,8 @@ export const AuthProvider = ({ children }) => {
           const response = await axios.get('/api/auth/me', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setUser(response.data.user);
+          const responseData = response.data.data || response.data;
+          setUser(responseData.user);
         } catch (error) {
           console.error('Failed to validate session:', error);
           clearAllStorage();
@@ -36,13 +37,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post('/api/auth/login', { email, password });
       clearAllStorage();
-      localStorage.setItem('token', response.data.token);
-      setUser(response.data.user);
-      return { success: true, user: response.data.user };
+      
+      // Handle standard response wrapper
+      const responseData = response.data.data || response.data;
+      
+      localStorage.setItem('token', responseData.token);
+      setUser(responseData.user);
+      return { success: true, user: responseData.user };
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Login failed' 
+        error: error.response?.data?.message || error.response?.data?.error || 'Login failed' 
       };
     }
   };
