@@ -532,24 +532,32 @@ export default function QADashboard() {
                             {/* Pull Request */}
                             <td>
                               {story.pr ? (
-                                <a 
-                                  href={story.pr.pr_url} 
-                                  target="_blank" 
-                                  rel="noreferrer" 
-                                  style={{ 
-                                    color: 'var(--da-accent)', 
-                                    fontWeight: 600, 
-                                    fontSize: '0.8rem', 
-                                    textDecoration: 'none',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px'
-                                  }}
-                                  onClick={e => e.stopPropagation()}
-                                >
-                                  <GitPullRequest size={13} />
-                                  {story.pr.pr_number ? `#${story.pr.pr_number}` : 'View PR'} <ExternalLink size={11} />
-                                </a>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  {story.pr.pr_url && (
+                                    <a 
+                                      href={story.pr.pr_url} 
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      style={{ color: 'var(--da-accent)', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                      onClick={e => e.stopPropagation()}
+                                    >
+                                      <GitPullRequest size={13} />
+                                      {story.pr.repo_name ? `${story.pr.repo_name} #${story.pr.pr_number}` : `#${story.pr.pr_number}`} <ExternalLink size={11} />
+                                    </a>
+                                  )}
+                                  {story.pr.secondary_pr_url && (
+                                    <a 
+                                      href={story.pr.secondary_pr_url} 
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      style={{ color: 'var(--da-accent)', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                      onClick={e => e.stopPropagation()}
+                                    >
+                                      <GitPullRequest size={13} />
+                                      {story.pr.secondary_repo_name ? `${story.pr.secondary_repo_name} #${story.pr.secondary_pr_number}` : `Secondary PR #${story.pr.secondary_pr_number}`} <ExternalLink size={11} />
+                                    </a>
+                                  )}
+                                </div>
                               ) : (
                                 <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>—</span>
                               )}
@@ -685,18 +693,33 @@ export default function QADashboard() {
 
                   <div>
                     <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
-                      PULL REQUEST
+                      PULL REQUESTS
                     </span>
-                    {selected.pr?.pr_url ? (
-                      <a 
-                        href={selected.pr.pr_url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <GitPullRequest size={14} /> 
-                        {selected.pr.pr_number ? `#${selected.pr.pr_number}` : 'View PR'} <ExternalLink size={12} />
-                      </a>
+                    {selected.pr ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {selected.pr.pr_url && (
+                          <a 
+                            href={selected.pr.pr_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <GitPullRequest size={14} /> 
+                            {selected.pr.repo_name ? `${selected.pr.repo_name} #${selected.pr.pr_number}` : `#${selected.pr.pr_number}`} <ExternalLink size={12} />
+                          </a>
+                        )}
+                        {selected.pr.secondary_pr_url && (
+                          <a 
+                            href={selected.pr.secondary_pr_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <GitPullRequest size={14} /> 
+                            {selected.pr.secondary_repo_name ? `${selected.pr.secondary_repo_name} #${selected.pr.secondary_pr_number}` : `Secondary PR #${selected.pr.secondary_pr_number}`} <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
                     ) : (
                       <span style={{ color: 'var(--da-muted)', fontWeight: 500 }}>No PR yet</span>
                     )}
@@ -1127,32 +1150,45 @@ export default function QADashboard() {
 
                           {/* Pull Request */}
                           <td>
-                            {prObj.pr_url ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <a 
-                                  href={prObj.pr_url} 
-                                  target="_blank" 
-                                  rel="noreferrer" 
-                                  style={{ 
-                                    color: 'var(--da-accent)', 
-                                    fontWeight: 600, 
-                                    fontSize: '0.8rem', 
-                                    textDecoration: 'none',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px'
-                                  }}
-                                  onClick={e => e.stopPropagation()}
-                                >
-                                  <GitPullRequest size={13} />
-                                  {prObj.pr_number ? `#${prObj.pr_number}` : 'PR'} <ExternalLink size={11} />
-                                </a>
-                                <span className="da-badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--da-success)', fontSize: '0.65rem' }}>
-                                  Merged
-                                </span>
+                            {prObj ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {prObj.pr_url && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <a 
+                                      href={prObj.pr_url} 
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      style={{ color: 'var(--da-accent)', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                      onClick={e => e.stopPropagation()}
+                                    >
+                                      <GitPullRequest size={13} />
+                                      {prObj.repo_name ? `${prObj.repo_name} #${prObj.pr_number}` : `#${prObj.pr_number}`} <ExternalLink size={11} />
+                                    </a>
+                                    {!isRejected && (
+                                      <span className="da-badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--da-success)', fontSize: '0.65rem' }}>Merged</span>
+                                    )}
+                                  </div>
+                                )}
+                                {prObj.secondary_pr_url && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <a 
+                                      href={prObj.secondary_pr_url} 
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      style={{ color: 'var(--da-accent)', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                      onClick={e => e.stopPropagation()}
+                                    >
+                                      <GitPullRequest size={13} />
+                                      {prObj.secondary_repo_name ? `${prObj.secondary_repo_name} #${prObj.secondary_pr_number}` : `Secondary #${prObj.secondary_pr_number}`} <ExternalLink size={11} />
+                                    </a>
+                                    {!isRejected && (
+                                      <span className="da-badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--da-success)', fontSize: '0.65rem' }}>Merged</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ) : (
-                              <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>Merged</span>
+                              <span style={{ color: 'var(--da-muted)', fontSize: '0.8rem' }}>{isRejected ? 'N/A' : 'Merged'}</span>
                             )}
                           </td>
 
@@ -1359,18 +1395,33 @@ export default function QADashboard() {
 
                 <div>
                   <span style={{ color: 'var(--da-muted)', display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '3px' }}>
-                    PULL REQUEST
+                    PULL REQUESTS
                   </span>
-                  {selectedApproved.pr?.pr_url ? (
-                    <a 
-                      href={selectedApproved.pr.pr_url} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <GitPullRequest size={14} /> 
-                      {selectedApproved.pr.pr_number ? `#${selectedApproved.pr.pr_number}` : 'View PR'} <ExternalLink size={12} />
-                    </a>
+                  {selectedApproved.pr ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {selectedApproved.pr.pr_url && (
+                        <a 
+                          href={selectedApproved.pr.pr_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <GitPullRequest size={14} /> 
+                          {selectedApproved.pr.repo_name ? `${selectedApproved.pr.repo_name} #${selectedApproved.pr.pr_number}` : `#${selectedApproved.pr.pr_number}`} <ExternalLink size={12} />
+                        </a>
+                      )}
+                      {selectedApproved.pr.secondary_pr_url && (
+                        <a 
+                          href={selectedApproved.pr.secondary_pr_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ color: 'var(--da-accent)', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <GitPullRequest size={14} /> 
+                          {selectedApproved.pr.secondary_repo_name ? `${selectedApproved.pr.secondary_repo_name} #${selectedApproved.pr.secondary_pr_number}` : `Secondary #${selectedApproved.pr.secondary_pr_number}`} <ExternalLink size={12} />
+                        </a>
+                      )}
+                    </div>
                   ) : (
                     <span style={{ color: isRejected ? 'var(--da-muted)' : 'var(--da-success)', fontWeight: 600 }}>{isRejected ? 'N/A' : 'Merged'}</span>
                   )}

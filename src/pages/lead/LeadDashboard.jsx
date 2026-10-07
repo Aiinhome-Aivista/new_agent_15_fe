@@ -303,7 +303,18 @@ export default function LeadDashboard() {
                               className="da-btn da-btn-outline" 
                               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1, fontSize: '0.82rem' }}
                             >
-                              <ExternalLink size={14} /> View on GitHub
+                              <ExternalLink size={14} /> View Primary PR
+                            </a>
+                          )}
+                          {selectedPR.secondary_pr_url && (
+                            <a 
+                              href={selectedPR.secondary_pr_url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="da-btn da-btn-outline" 
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1, fontSize: '0.82rem' }}
+                            >
+                              <ExternalLink size={14} /> View Secondary PR
                             </a>
                           )}
                           <button
