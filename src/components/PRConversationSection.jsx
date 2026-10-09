@@ -287,6 +287,18 @@ export default function PRConversationSection({ prId, prNumber, prUrl, cachedSum
                             <span style={{ fontWeight: 600, color: 'var(--da-text)' }}>
                               @{rev.user || 'reviewer'}
                             </span>
+                            {rev.repo_tag && (
+                              <span style={{
+                                fontSize: '0.65rem',
+                                padding: '1px 6px',
+                                borderRadius: '10px',
+                                background: 'var(--da-border, #222b3b)',
+                                color: 'var(--da-muted, #94a3b8)',
+                                textTransform: 'uppercase'
+                              }}>
+                                {rev.repo_tag}
+                              </span>
+                            )}
                             {getVerdictBadge(rev.state)}
                           </div>
                           {rev.body && (
@@ -328,6 +340,18 @@ export default function PRConversationSection({ prId, prNumber, prUrl, cachedSum
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--da-text)', fontWeight: 600 }}>
                             <User size={13} style={{ color: 'var(--da-accent)' }} />
                             <span>@{comment.user || 'author'}</span>
+                            {comment.repo_tag && (
+                              <span style={{
+                                fontSize: '0.65rem',
+                                padding: '1px 6px',
+                                borderRadius: '10px',
+                                background: 'var(--da-border, #222b3b)',
+                                color: 'var(--da-muted, #94a3b8)',
+                                textTransform: 'uppercase'
+                              }}>
+                                {comment.repo_tag}
+                              </span>
+                            )}
                           </div>
                           <span style={{ fontSize: '0.7rem', color: 'var(--da-muted)', fontFamily: 'monospace' }}>
                             {comment.created_at ? new Date(comment.created_at).toLocaleString() : ''}
