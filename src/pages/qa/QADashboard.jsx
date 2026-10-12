@@ -460,12 +460,12 @@ export default function QADashboard() {
                   <table className="da-table">
                     <thead>
                       <tr>
-                        <th style={{ minWidth: '240px' }}>Story</th>
-                        <th>Branch</th>
-                        <th>Pull Request</th>
-                        <th>Priority</th>
-                        <th>Iteration</th>
-                        <th style={{ textAlign: 'right', minWidth: '120px' }}>Actions</th>
+                        <th>Story</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Branch</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Pull Request</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Priority</th>
+                        <th style={{ whiteSpace: 'nowrap' }}>Iteration</th>
+                        <th style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -574,13 +574,13 @@ export default function QADashboard() {
                             <td><span className="da-badge default">Loop {story.loop_iterations || 1}/3</span></td>
 
                             {/* Actions */}
-                            <td style={{ textAlign: 'right' }}>
+                            <td className="da-actions-cell" style={{ textAlign: 'center' }}>
                               <button 
-                                className="da-btn da-btn-primary" 
-                                style={{ padding: '0.3rem 0.8rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }} 
+                                className="da-action-btn da-action-btn-run" 
                                 onClick={(e) => { e.stopPropagation(); setSelected(story); setConflictData(null); }}
+                                title="Review story"
                               >
-                                <Eye size={13} /> Review
+                                <Eye size={12} /> Review
                               </button>
                             </td>
                           </tr>
@@ -1066,13 +1066,13 @@ export default function QADashboard() {
                 <table className="da-table">
                   <thead>
                     <tr>
-                      <th style={{ minWidth: '240px' }}>Story</th>
-                      <th>Branch</th>
-                      <th>Pull Request</th>
-                      <th>{historyFilter === 'approved' ? 'Approved By' : 'Rejected By'}</th>
-                      <th>Date</th>
+                      <th>Story</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Branch</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Pull Request</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>{historyFilter === 'approved' ? 'Approved By' : 'Rejected By'}</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Date</th>
                       <th>QA Feedback</th>
-                      <th style={{ textAlign: 'right', minWidth: '120px' }}>Actions</th>
+                      <th style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1237,25 +1237,16 @@ export default function QADashboard() {
                           </td>
 
                           {/* Actions */}
-                          <td style={{ textAlign: 'right' }}>
+                          <td className="da-actions-cell" style={{ textAlign: 'center' }}>
                             <button
-                              className="da-btn da-btn-outline"
-                              style={{ 
-                                padding: '0.25rem 0.65rem', 
-                                fontSize: '0.75rem', 
-                                borderColor: 'var(--da-border-orange)', 
-                                color: 'var(--da-accent)',
-                                background: 'var(--da-surface-2)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
+                              className="da-action-btn da-action-btn-evidence"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedApproved(item);
                               }}
+                              title="View review details"
                             >
-                              <Eye size={13} /> View Details
+                              <Eye size={12} /> View Details
                             </button>
                           </td>
                         </tr>
