@@ -843,20 +843,20 @@ export default function PODashboard() {
                 <table className="da-table">
                   <thead>
                     <tr>
-                      <th style={{ minWidth: '240px' }}>Story</th>
-                      <th>Jira Key</th>
-                      <th>Priority & Points</th>
-                      <th>Assignee</th>
-                      <th>Start Date</th>
-                      <th>Due Date</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'right', minWidth: '160px' }}>Actions</th>
+                      <th>Story</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Jira Key</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Priority & Points</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Assignee</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Start Date</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Due Date</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>Status</th>
+                      <th style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStories.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--da-muted)' }}>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--da-muted)' }}>
                           <FileText size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.4, display: 'block' }} />
                           <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--da-text)' }}>No stories found</div>
                           <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>No stories match the selected filter or search query.</div>
@@ -965,96 +965,86 @@ export default function PODashboard() {
                                 {(story.status || '').toUpperCase()}
                               </span>
                             </td>
-                            <td style={{ textAlign: 'right' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', alignItems: 'center' }}>
+                            <td className="da-actions-cell" style={{ textAlign: 'center' }}>
+                              <div className="da-action-grid">
                                 {pipelineRuns[story.id]?.status === 'running' ? (
-                                  <div 
-                                    style={{ 
-                                      display: 'inline-flex', 
-                                      alignItems: 'center', 
-                                      gap: '6px', 
-                                      background: 'rgba(255, 90, 20, 0.08)', 
-                                      border: '1px solid var(--da-accent)', 
-                                      borderRadius: '6px', 
-                                      padding: '3px 10px',
-                                      fontSize: '0.75rem',
-                                      color: 'var(--da-accent)',
-                                      fontWeight: 600
-                                    }}
-                                    title="Pipeline is executing across DEVAA agents"
-                                  >
-                                    <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} />
-                                    <span>{pipelineRuns[story.id].stage || 'Running'}...</span>
-                                  </div>
+                                  <>
+                                    <div 
+                                      className="da-action-running-pill"
+                                      title="Pipeline is executing across DEVAA agents"
+                                    >
+                                      <RefreshCw size={11} className="lucide-animated-spin" />
+                                      <span>{pipelineRuns[story.id].stage || 'Running'}...</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                      style={{ gridColumn: 'span 2' }}
+                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                      title="View pipeline activity log"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                      </svg>
+                                      Logs
+                                    </button>
+                                  </>
                                 ) : pipelineRuns[story.id]?.status === 'success' && pipelineRuns[story.id].pr_url ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <>
                                     <a 
                                       href={pipelineRuns[story.id].pr_url} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="da-btn"
-                                      style={{ 
-                                        background: 'rgba(16, 185, 129, 0.1)', 
-                                        color: '#059669', 
-                                        border: '1px solid rgba(16, 185, 129, 0.3)',
-                                        padding: '0.25rem 0.65rem', 
-                                        fontSize: '0.75rem', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: '4px',
-                                        textDecoration: 'none',
-                                        fontWeight: 600
-                                      }}
+                                      className="da-action-btn da-action-btn-pr"
                                       onClick={(e) => e.stopPropagation()}
                                       title="Open Primary Pull Request"
                                     >
-                                      <CheckCircle2 size={13} color="#059669" /> PR: {pipelineRuns[story.id].repo_name || 'Created'} <ExternalLink size={11} />
+                                      <CheckCircle2 size={12} /> PR: {pipelineRuns[story.id].repo_name || 'Created'} <ExternalLink size={10} />
                                     </a>
                                     {pipelineRuns[story.id].secondary_pr_url && (
                                       <a 
                                         href={pipelineRuns[story.id].secondary_pr_url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="da-btn"
-                                        style={{ 
-                                          background: 'rgba(16, 185, 129, 0.1)', 
-                                          color: '#059669', 
-                                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                                          padding: '0.25rem 0.65rem', 
-                                          fontSize: '0.75rem', 
-                                          display: 'flex', 
-                                          alignItems: 'center', 
-                                          gap: '4px',
-                                          textDecoration: 'none',
-                                          fontWeight: 600
-                                        }}
+                                        className="da-action-btn da-action-btn-pr"
                                         onClick={(e) => e.stopPropagation()}
                                         title="Open Secondary Pull Request"
                                       >
-                                        <CheckCircle2 size={13} color="#059669" /> PR: {pipelineRuns[story.id].secondary_repo_name || 'Secondary'} <ExternalLink size={11} />
+                                        <CheckCircle2 size={12} /> PR: {pipelineRuns[story.id].secondary_repo_name || 'Secondary'} <ExternalLink size={10} />
                                       </a>
                                     )}
-                                  </div>
+                                    <button
+                                      type="button"
+                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                      title="View pipeline activity log"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                      </svg>
+                                      Logs
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="da-action-btn da-action-btn-delete"
+                                      onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
+                                      title="Delete story from app and Jira"
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
+                                  </>
                                 ) : pipelineRuns[story.id]?.status === 'failed' ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <>
+                                    {/* Row 1: Failed Indicator & Retry Button */}
                                     <span 
-                                      className="da-badge"
-                                      style={{ 
-                                        background: 'rgba(239, 68, 68, 0.1)', 
-                                        color: 'var(--da-danger)', 
-                                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                                        fontSize: '0.72rem',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                      }}
+                                      className="da-action-btn da-action-btn-failed"
                                       title={pipelineRuns[story.id].error}
                                     >
-                                      <AlertTriangle size={12} /> Failed ({pipelineRuns[story.id].stage || 'Error'})
+                                      <AlertTriangle size={11} /> Failed
                                     </span>
                                     <button 
-                                      className="da-btn da-btn-outline" 
-                                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}
+                                      type="button"
+                                      className="da-action-btn da-action-btn-retry"
                                       disabled={pipelineRuns[story.id]?.status === 'running'}
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1062,37 +1052,48 @@ export default function PODashboard() {
                                       }}
                                       title="Retry pipeline"
                                     >
-                                      Retry
+                                      <RotateCcw size={11} /> Retry
                                     </button>
-                                  </div>
+
+                                    {/* Row 2: Logs & Delete */}
+                                    <button
+                                      type="button"
+                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                      title="View pipeline activity log"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                      </svg>
+                                      Logs
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="da-action-btn da-action-btn-delete"
+                                      onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
+                                      title="Delete story from app and Jira"
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
+                                  </>
                                 ) : isTodo ? (
                                   <>
+                                    {/* Row 1: First two buttons (Edit + Run/Rework) */}
                                     <button 
-                                      className="da-btn da-btn-secondary" 
-                                      style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      type="button"
+                                      className="da-action-btn da-action-btn-edit"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleOpenEditStory(story);
                                       }}
                                       title="Edit story details (Title, Priority, Story Points, Due Date, Assignee, etc.)"
                                     >
-                                      <Edit3 size={13} /> Edit
+                                      <Edit3 size={12} /> Edit
                                     </button>
                                     {story.has_rework ? (
                                       <button 
-                                        className="da-btn" 
-                                        style={{ 
-                                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
-                                          color: '#FFF', 
-                                          border: 'none',
-                                          padding: '0.25rem 0.65rem', 
-                                          fontSize: '0.78rem', 
-                                          display: 'flex', 
-                                          alignItems: 'center', 
-                                          gap: '4px',
-                                          fontWeight: 600,
-                                          boxShadow: '0 2px 4px rgba(217, 119, 6, 0.25)'
-                                        }}
+                                        type="button"
+                                        className="da-action-btn da-action-btn-rework"
                                         disabled={pipelineRuns[story.id]?.status === 'running'}
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1100,12 +1101,12 @@ export default function PODashboard() {
                                         }}
                                         title="Re-run Rework Pipeline — injects QA rejection feedback into agents"
                                       >
-                                        <RotateCcw size={13} /> Re-run (Rework)
+                                        <RotateCcw size={12} /> Rework
                                       </button>
                                     ) : (
                                       <button 
-                                        className="da-btn da-btn-primary" 
-                                        style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        type="button"
+                                        className="da-action-btn da-action-btn-run"
                                         disabled={pipelineRuns[story.id]?.status === 'running'}
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1113,94 +1114,84 @@ export default function PODashboard() {
                                         }}
                                         title="Run DEVAA Pipeline"
                                       >
-                                        <Play size={13} /> Run
+                                        <Play size={12} /> Run
                                       </button>
                                     )}
+
+                                    {/* Row 2: Bottom two buttons (Logs + Delete) */}
+                                    <button
+                                      type="button"
+                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                      title="View pipeline activity log"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                      </svg>
+                                      Logs
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="da-action-btn da-action-btn-delete"
+                                      onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
+                                      title="Delete story from app and Jira"
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
                                   </>
                                 ) : (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <>
+                                    {/* Row 1: First two buttons (Evidence + PDF) */}
                                     <button 
-                                      className="da-btn da-btn-outline" 
-                                      style={{ 
-                                        padding: '0.25rem 0.6rem', 
-                                        fontSize: '0.75rem', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: '4px',
-                                        color: '#FF5A14',
-                                        borderColor: 'rgba(255,90,20,0.4)',
-                                        background: 'rgba(255,90,20,0.06)'
-                                      }}
+                                      type="button"
+                                      className="da-action-btn da-action-btn-evidence"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setEvidenceModalStory(story);
                                       }}
                                       title="View full generated evidence report modal"
                                     >
-                                      <FileText size={13} /> Evidence
+                                      <FileText size={12} /> Evidence
                                     </button>
                                     <button 
-                                      className="da-btn da-btn-outline" 
-                                      style={{ 
-                                        padding: '0.25rem 0.5rem', 
-                                        fontSize: '0.75rem', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: '4px',
-                                        color: '#38bdf8',
-                                        borderColor: 'rgba(56,189,248,0.4)',
-                                        background: 'rgba(56,189,248,0.06)'
-                                      }}
+                                      type="button"
+                                      className="da-action-btn da-action-btn-pdf"
                                       onClick={(e) => handleQuickDownloadPdf(e, story)}
                                       disabled={quickDownloadingId === story.id}
                                       title="Quick download evidence in PDF format"
                                     >
                                       {quickDownloadingId === story.id ? (
-                                        <RefreshCw size={12} className="animate-spin" />
+                                        <RefreshCw size={11} className="lucide-animated-spin" />
                                       ) : (
-                                        <Download size={12} />
+                                        <Download size={11} />
                                       )}
                                       PDF
                                     </button>
-                                  </div>
+
+                                    {/* Row 2: Bottom two buttons (Logs + Delete) */}
+                                    <button
+                                      type="button"
+                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                      title="View pipeline activity log"
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                      </svg>
+                                      Logs
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="da-action-btn da-action-btn-delete"
+                                      onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
+                                      title="Delete story from app and Jira"
+                                    >
+                                      <Trash2 size={12} /> Delete
+                                    </button>
+                                  </>
                                 )}
-                              {/* Logs button — commented out */}
-                              
-                              <button
-                                className="da-btn da-btn-outline"
-                                style={{
-                                  padding: '0.25rem 0.65rem', fontSize: '0.75rem',
-                                  display: 'flex', alignItems: 'center', gap: '4px',
-                                  background: logsPanelStory?.id === story.id ? 'rgba(99,102,241,0.15)' : '',
-                                  borderColor: logsPanelStory?.id === story.id ? '#6366f1' : '',
-                                  color: logsPanelStory?.id === story.id ? '#818cf8' : '',
-                                }}
-                                onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
-                                title="View pipeline activity log"
-                              >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-                                </svg>
-                                Logs
-                              </button>
-                             
-                              {/* Delete button */}
-                              <button
-                                className="da-btn da-btn-outline"
-                                style={{
-                                  padding: '0.25rem 0.65rem', fontSize: '0.75rem',
-                                  display: 'flex', alignItems: 'center', gap: '4px',
-                                  borderColor: '#ef4444',
-                                  color: '#f87171',
-                                  background: 'rgba(239, 68, 68, 0.08)',
-                                }}
-                                onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
-                                title="Delete story from app and Jira"
-                              >
-                                <Trash2 size={13} /> Delete
-                              </button>
-                            </div>
-                          </td>
+                              </div>
+                            </td>
                           </tr>
                         );
                       }))}
