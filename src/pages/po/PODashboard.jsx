@@ -868,6 +868,9 @@ export default function PODashboard() {
                         const isTodo = normStatus === 'todo' || normStatus === 'open';
                         const details = story.repository_details?.[0] || {};
                         const createdInDevaa = isDevaaStory(story);
+                        const hasStoryRan = Boolean(
+                          story.has_run ?? (pipelineRuns[story.id] || story.has_rework || (normStatus !== 'todo' && normStatus !== 'open'))
+                        ) || Boolean(pipelineRuns[story.id]) || Boolean(story.has_rework);
 
                         return (
                           <tr 
@@ -1118,21 +1121,24 @@ export default function PODashboard() {
                                       </button>
                                     )}
 
-                                    {/* Row 2: Bottom two buttons (Logs + Delete) */}
-                                    <button
-                                      type="button"
-                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
-                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
-                                      title="View pipeline activity log"
-                                    >
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-                                      </svg>
-                                      Logs
-                                    </button>
+                                    {/* Row 2: Bottom two buttons (Logs if ran + Delete) */}
+                                    {hasStoryRan && (
+                                      <button
+                                        type="button"
+                                        className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                        onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                        title="View pipeline activity log"
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                        </svg>
+                                        Logs
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
                                       className="da-action-btn da-action-btn-delete"
+                                      style={!hasStoryRan ? { gridColumn: 'span 2' } : undefined}
                                       onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
                                       title="Delete story from app and Jira"
                                     >
@@ -1168,21 +1174,24 @@ export default function PODashboard() {
                                       PDF
                                     </button>
 
-                                    {/* Row 2: Bottom two buttons (Logs + Delete) */}
-                                    <button
-                                      type="button"
-                                      className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
-                                      onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
-                                      title="View pipeline activity log"
-                                    >
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-                                      </svg>
-                                      Logs
-                                    </button>
+                                    {/* Row 2: Bottom two buttons (Logs if ran + Delete) */}
+                                    {hasStoryRan && (
+                                      <button
+                                        type="button"
+                                        className={`da-action-btn da-action-btn-logs ${logsPanelStory?.id === story.id ? 'active' : ''}`}
+                                        onClick={e => { e.stopPropagation(); setLogsPanelStory(story); }}
+                                        title="View pipeline activity log"
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+                                        </svg>
+                                        Logs
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
                                       className="da-action-btn da-action-btn-delete"
+                                      style={!hasStoryRan ? { gridColumn: 'span 2' } : undefined}
                                       onClick={e => { e.stopPropagation(); setStoryToDelete(story); }}
                                       title="Delete story from app and Jira"
                                     >
