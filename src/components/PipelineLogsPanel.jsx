@@ -446,12 +446,19 @@ const STAGES = [
 
 function StagesBar({ workflow, logs }) {
   const currentAgent = workflow?.current_agent || 'Intake';
+  const wfStatus = workflow?.status || 'Running';
+  const isTerminal = TERMINAL.has(wfStatus);
+  const isDone = ['Awaiting QA', 'Completed', 'Done'].includes(wfStatus);
+  const isWfFailed = wfStatus === 'Failed';
 
   const logsByAgent = {};
   (logs || []).forEach(l => {
     if (!logsByAgent[l.agent]) logsByAgent[l.agent] = [];
     logsByAgent[l.agent].push(l.level);
   });
+
+  const stageKeys = STAGES.map(s => s.key);
+  const currentAgentIndex = stageKeys.indexOf(currentAgent);
 
   return (
     <div style={{
@@ -463,9 +470,25 @@ function StagesBar({ workflow, logs }) {
     }}>
       {STAGES.map((stage, idx) => {
         const agentLogs = logsByAgent[stage.key] || [];
-        const hasFailed  = agentLogs.includes('error');
-        const hasPassed  = agentLogs.includes('success');
-        const isActive   = currentAgent === stage.key;
+        const hasLogs = agentLogs.length > 0;
+        const lastOutcome = [...agentLogs].reverse().find(lvl => ['error', 'success', 'warning'].includes(lvl));
+
+        const isPastStage = (currentAgentIndex > -1 && idx < currentAgentIndex) || (isDone && idx <= (currentAgentIndex >= 0 ? currentAgentIndex : STAGES.length - 1));
+        const isActive = !isTerminal && currentAgent === stage.key;
+
+        let status = 'future'; // 'passed' | 'warning' | 'failed' | 'active' | 'future'
+
+        if (lastOutcome === 'error' || (isWfFailed && currentAgent === stage.key)) {
+          status = 'failed';
+        } else if (lastOutcome === 'success') {
+          status = 'passed';
+        } else if (lastOutcome === 'warning') {
+          status = isActive ? 'active' : 'warning';
+        } else if (isPastStage && hasLogs) {
+          status = 'passed';
+        } else if (isActive) {
+          status = 'active';
+        }
 
         // colour mapping — DEVAA palette
         let dotBg     = 'rgba(255,255,255,0.08)';  // future
@@ -473,13 +496,16 @@ function StagesBar({ workflow, logs }) {
         let labelColor = 'rgba(255,255,255,0.3)';
         let glow       = 'none';
 
-        if (hasFailed) {
+        if (status === 'failed') {
           dotBg = 'rgba(239,68,68,0.25)'; dotBorder = '#ef4444';
           labelColor = '#ef4444';
-        } else if (hasPassed) {
+        } else if (status === 'warning') {
+          dotBg = 'rgba(245,158,11,0.25)'; dotBorder = '#f59e0b';
+          labelColor = '#f59e0b';
+        } else if (status === 'passed') {
           dotBg = 'rgba(34,197,94,0.2)'; dotBorder = '#22c55e';
           labelColor = '#22c55e';
-        } else if (isActive) {
+        } else if (status === 'active') {
           dotBg = 'rgba(255,90,20,0.25)'; dotBorder = '#FF5A14';
           labelColor = '#FF8A55';
           glow = '0 0 10px rgba(255,90,20,0.5)';
@@ -487,10 +513,13 @@ function StagesBar({ workflow, logs }) {
 
         return (
           <React.Fragment key={stage.key}>
-            <div style={{
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: '5px', flexShrink: 0,
-            }}>
+            <div
+              title={`${stage.label}: ${status}`}
+              style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: '5px', flexShrink: 0,
+              }}
+            >
               <div style={{
                 width: '24px', height: '24px', borderRadius: '50%',
                 background: dotBg,
@@ -498,15 +527,18 @@ function StagesBar({ workflow, logs }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.35s',
                 boxShadow: glow,
-                animation: isActive ? 'pl-pulse 1.4s ease-in-out infinite' : 'none',
+                animation: status === 'active' ? 'pl-pulse 1.4s ease-in-out infinite' : 'none',
               }}>
-                {hasPassed && !hasFailed && (
+                {status === 'passed' && (
                   <CheckCircle2 size={12} color="#22c55e" />
                 )}
-                {hasFailed && (
+                {status === 'warning' && (
+                  <AlertTriangle size={11} color="#f59e0b" />
+                )}
+                {status === 'failed' && (
                   <X size={11} color="#ef4444" />
                 )}
-                {isActive && !hasPassed && !hasFailed && (
+                {status === 'active' && (
                   <div style={{
                     width: '7px', height: '7px', borderRadius: '50%',
                     background: '#FF5A14',
@@ -516,7 +548,7 @@ function StagesBar({ workflow, logs }) {
               <span style={{
                 fontSize: '0.59rem', color: labelColor,
                 fontFamily: 'Inter,sans-serif',
-                fontWeight: isActive ? 700 : 500,
+                fontWeight: status === 'active' ? 700 : 500,
                 letterSpacing: '0.05em', textTransform: 'uppercase',
               }}>
                 {stage.label}
@@ -526,8 +558,10 @@ function StagesBar({ workflow, logs }) {
             {idx < STAGES.length - 1 && (
               <div style={{
                 flex: 1, height: '2px',
-                background: hasPassed
+                background: status === 'passed'
                   ? 'linear-gradient(90deg,#22c55e,rgba(34,197,94,0.3))'
+                  : status === 'warning'
+                  ? 'linear-gradient(90deg,#f59e0b,rgba(245,158,11,0.3))'
                   : 'rgba(255,255,255,0.07)',
                 minWidth: '12px', maxWidth: '52px',
                 transition: 'background 0.5s',
