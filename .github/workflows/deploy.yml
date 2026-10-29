@@ -1,0 +1,134 @@
+name: Deploy React Frontend to VPS
+
+on:
+  push:
+    branches:
+      - deploy-1
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: aiinhome-aivista/new_agent_15_fe
+  CONTAINER_NAME: new-agent-15-fe
+  HOST_PORT: 3031
+  CONTAINER_PORT: 80
+
+jobs:
+
+  # =========================================================
+  # 1. BUILD DOCKER IMAGE AND PUSH TO GHCR
+  # =========================================================
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=deploy-1
+            type=sha,prefix=sha-
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  # =========================================================
+  # 2. DEPLOY IMAGE TO VPS
+  # =========================================================
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+          script: |
+            set -e
+
+            echo "======================================"
+            echo "Starting frontend deployment..."
+            echo "======================================"
+
+            echo "Logging into GHCR..."
+
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io \
+              -u "${{ github.actor }}" \
+              --password-stdin
+
+            echo "Pulling latest frontend image..."
+
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:deploy-1
+
+            echo "Stopping existing container..."
+
+            docker stop ${{ env.CONTAINER_NAME }} || true
+
+            echo "Removing existing container..."
+
+            docker rm ${{ env.CONTAINER_NAME }} || true
+
+            echo "Starting new frontend container..."
+
+            docker run -d \
+              --name ${{ env.CONTAINER_NAME }} \
+              --restart unless-stopped \
+              -p ${{ env.HOST_PORT }}:${{ env.CONTAINER_PORT }} \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:deploy-1
+
+            echo "Waiting for Nginx..."
+
+            sleep 5
+
+            echo "Running health check..."
+
+            curl --fail --retry 5 --retry-delay 2 \
+              http://localhost:${{ env.HOST_PORT }}/healthz
+
+            echo ""
+            echo "Checking container..."
+
+            docker ps \
+              --filter "name=${{ env.CONTAINER_NAME }}"
+
+            echo "Cleaning unused images..."
+
+            docker image prune -f
+
+            echo "======================================"
+            echo "Frontend deployment successful!"
+            echo "======================================"
